@@ -26,11 +26,9 @@
 
 int main(int argc, char const *argv[])
 {
-    int server_fd, new_socket; long valread;
+    int server_fd, new_socket;
     struct sockaddr_in address;
     int addrlen = sizeof(address);
-    
-    char *hello = SEND_CONTENT_2;
     
     // Creating socket file descriptor
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
@@ -68,13 +66,13 @@ setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
         }
         
         char buffer[30000] = {0};
-        //for (;;)
-        //{
-            valread = read( new_socket , buffer, 30000);
-            printf("%s(%zu)\n",buffer, valread);
-        //}
-        //FORx((unsigned char *)buffer, valread)
-        write(new_socket , hello , strlen(hello));
+        for (size_t valread = sizeof(buffer);valread == sizeof(buffer);)
+        {
+            valread = read( new_socket , buffer, sizeof(buffer));
+            printf("%s/* %zu */",buffer, valread);
+        }
+        printf("\n");
+        write(new_socket , SEND_CONTENT_0 , strlen(SEND_CONTENT_0));
         printf("------------------Hello message sent-------------------\n");
         close(new_socket);
     }
