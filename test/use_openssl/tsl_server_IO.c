@@ -61,19 +61,16 @@ SSL_CTX *create_context(void)
 
     SSL_CTX_set_options(ctx, SSL_OP_SINGLE_DH_USE);
     SSL_CTX_set_ecdh_auto(ctx, 1);
-
-    if (SSL_CTX_use_certificate_file(ctx, "server.crt", SSL_FILETYPE_PEM) <= 0) {
+    if (SSL_CTX_use_certificate_file(ctx, "localhost.crt", SSL_FILETYPE_PEM) <= 0) {
         ERR_print_errors_fp(stderr);
         SSL_CTX_free(ctx);
         return NULL;
     }
-
-    if (SSL_CTX_use_PrivateKey_file(ctx, "server.key", SSL_FILETYPE_PEM) <= 0) {
+    if (SSL_CTX_use_PrivateKey_file(ctx, "localhost.key", SSL_FILETYPE_PEM) <= 0) {
         ERR_print_errors_fp(stderr);
         SSL_CTX_free(ctx);
         return NULL;
     }
-
     return ctx;
 }
 
