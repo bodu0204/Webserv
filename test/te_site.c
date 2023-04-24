@@ -8,7 +8,6 @@
 #include <string.h>
 #include <stdbool.h>
 
-#define PORT 8080
 #define SEND_CONTENT_0 "HTTP/1.1 200 OK\nContent-Type: text/plain\nContent-Length: 12\n\nHello world!"
 #define SEND_CONTENT_1 "HTTP/1.1 200 OK\nContent-Type: text/html\nContent-Length: 212\n\n\
 <!DOCTYPE html>\
@@ -26,6 +25,9 @@
 
 int main(int argc, char const *argv[])
 {
+    if (argc != 2)
+        return (1 + 0 * fprintf(stderr, "Usage: %s <port>\n", argv[0]));
+
     int server_fd, new_socket;
     struct sockaddr_in address;
     int addrlen = sizeof(address);
@@ -40,7 +42,7 @@ int main(int argc, char const *argv[])
 
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
-    address.sin_port = htons( PORT );
+    address.sin_port = htons( atoi(argv[1]) );
     
     memset(address.sin_zero, '\0', sizeof address.sin_zero);
     

@@ -1,8 +1,9 @@
-#include "ssl.h"
+#include <openssl/ssl.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdlib.h>
 
 #define CERT_FILE "server.crt"
 #define KEY_FILE "server.key"
@@ -90,17 +91,20 @@ void handle_connections(int sockfd, SSL_CTX *ctx)
     }
 }
 
-int main()
+int main(int argc, char *argv[])
 {
     SSL_CTX *ctx;
     int sockfd;
+
+    if (argc != 2)
+        return (1 + 0 * fprintf(stderr, "Usage: %s <port>\n", argv[0]));
 
     ctx = create_context();
     if (!ctx) {
         return -1;
     }
 
-    sockfd = create_socket(443);
+    sockfd = create_socket(atoi(argv[1]));
     if (sockfd < 0) {
         SSL_CTX_free(ctx);
         return -1;

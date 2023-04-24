@@ -111,10 +111,8 @@ int main(int argc, char *argv[])
     aclient clients[MAX_CLIENTS];
     int num_clients = 0;
 
-    if (argc != 2) {
-        fprintf(stderr, "Usage: %s <port>\n", argv[0]);
-        exit(EXIT_FAILURE);
-    }
+    if (argc != 2)
+        return (1 + 0 * fprintf(stderr, "Usage: %s <port>\n", argv[0]));
 
     ctx = create_context();
     if (!ctx) {
