@@ -7,7 +7,7 @@ import(
 )
 
 func main (){
-	resp, err := http.Get("http://localhost:8080")
+	resp, err := http.Get("https://localhost/")
 	if err != nil {
 		panic(err)
 	}
@@ -19,5 +19,4 @@ func main (){
 	}
 	log.Println(resp.Header)
 	log.Println(string(body))
-
 }

@@ -1,1 +1,0 @@
-subjectAltName = DNS:*.Webserv.localhost, DNS:Webserv.localhost
