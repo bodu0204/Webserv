@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"net/httputil"
+	"net/http/httputil"
 )
 
 func main(){
@@ -22,7 +22,18 @@ func main(){
 	tlsConfig.BuildNameToCertificate()
 	client := &http.Client{
 		Transport: &http.Transport{
-			TLSClientConfig: tls,
+			TLSClientConfig: tlsConfig,
 		},
 	}
+	resp, err := client.Get("https://localhost:8080")
+	if err != nil{
+		panic(err)
+	}
+	defer resp.Body.Close()
+	dump, err := httputil.DumpResponse(resp, true)
+	if err != nil{
+		panic(err)
+	}
+	log.Println(string(dump))
+
 }

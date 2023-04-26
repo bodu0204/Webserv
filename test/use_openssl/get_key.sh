@@ -4,11 +4,11 @@ echo "localhost.key was made." &&
 openssl req -out localhost.csr -key localhost.key -new -nodes -subj "/C=JP/ST=Tokyo/L=Ropongi/CN=localhost"&&
 echo "localhost.csr was made." &&
 openssl x509 -req -days 1 -signkey localhost.key -in localhost.csr -out localhost.crt -extfile ${0%/*}/san.txt &&
-echo "localhost.crt was made." &&
+echo "localhost.crt was made." 
 
 #openssl req -x509 -newkey rsa:4096 -nodes -keyout localhost.key -out localhost.crt -days 1 -subj "/C=JP/ST=Tokyo/L=Ropongi/CN=Webserv.localhost" -extfile san.txt;
-sudo security add-trusted-cert -d -r trustRoot -k "/Library/Keychains/System.keychain" "./localhost.crt" &&
-echo "security was set."
+#sudo security add-trusted-cert -d -r trustRoot -k "/Library/Keychains/System.keychain" "./localhost.crt" &&
+#echo "security was set."
 
 # security add-trusted-cert -d -r trustRoot -k "/Library/Keychains/System.keychain" "証明書のパス"
 #   証明書のインストール
