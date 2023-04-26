@@ -364,3 +364,5 @@
 - -1 --tsl1 --tsl1.0 --tsl1.1 --tsl1.2 --tsl1.3 TLSで接続
 - --cert-status 証明書を確認
 - -k --inscurr オレオレ証明書でもエラーにならない
+- --cacert <.crt> で証明書を設定
+- --insecure -k
