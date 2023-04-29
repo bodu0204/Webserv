@@ -1,6 +1,7 @@
-package main 
+package main
 
-import(
+import (
+	"crypto/tls"
 	"fmt"
 	"log"
 	"net/http"
@@ -16,9 +17,16 @@ func handler(w http.ResponseWriter, r *http.Request){
 	fmt.Fprintf(w, "<html><body>hello</body></html>\n")
 }
 
-func main (){
+func main(){
+	server := &http.Server{
+		TLSConfig: &tls.Config{
+			ClientAuth: tls.RequireAndVerifyClientCert,
+			MinVersion: tls.VersionTLS12,
+		},
+		Addr: ":443",
+	}
 	http.HandleFunc("/", handler)
-	log.Printf("start http listening :443")
-	err := http.ListenAndServeTLS(":443", "localhost.crt", "localhost.key", nil)
+	log.Println("start http listening :443")
+	err := server.ListenAndServeTLS("localhost.crt", "localhost.key")
 	log.Println(err)
 }
