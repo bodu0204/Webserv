@@ -39,7 +39,7 @@ func handlerImage(w http.ResponseWriter, r *http.Request) {
 func main() {
 	http.HandleFunc("/", handlerHtml)
 	http.HandleFunc("/image", handlerImage)
-	fmt.Println("start http listening :18443")
-	err := http.ListenAndServeTLS(":18443", "server.crt", "server.key", nil)
+	fmt.Println("start http listening :443")
+	err := http.ListenAndServeTLS(":443", "localhost.crt", "localhost.key", nil)
 	fmt.Println(err)
 }
