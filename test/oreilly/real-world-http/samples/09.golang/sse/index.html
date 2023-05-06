@@ -12,7 +12,7 @@
         <script>
         const component = {
           oninit: function(vnode) {
-              this.primes = stream([]);
+              this.primes = m.stream([]);
               const sse = new EventSource('/prime');
               sse.onmessage = (event) => {
                   this.primes().splice(0, 0, JSON.parse(event.data));
