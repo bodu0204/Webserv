@@ -1,69 +1,87 @@
 #include <string>
-#define IGNOR_C '\\'
-#define BRACKET_f "\'\"{"
-#define BRACKET_b "\'\"}"
-#define BRACKET "{}"
-#define IGNOR_B "\'\""
 
-static bool _r_bracket(const char *src, int n, size_t &len){
-	for (; src[len]; len++)
-	{
-		if (BRACKET_f[n] != BRACKET_b[n])
-		{
-			size_t i = 0;
-			for (; BRACKET_f[i] && src[len] != BRACKET_f[i]; i++);
-		}
-	}
-	
-}
-
-static bool _bracket(const char *src, size_t &start, size_t &len){
-	start = 0;
-	len = 0;
-	const char *ig_b = (const char *)memchr(IGNOR_B, src[start], strlen(IGNOR_B));
-	const char *brac = (const char *)memchr(BRACKET, src[start], strlen(BRACKET));
-	while (src[start] && !brac)
-	{
-		if (ig_b)
-		{
-			start++;
-			for (; src[start] && src[start] != *ig_b; start++)
-				if(src[start] == IGNOR_C && src[start + 1])
-					start++;
-			if (!src[start])
-			{
-				start = 0;
-				return (false);
-			}
-			start++;
-			ig_b = NULL;
-		}
-		while (src[start] && !ig_b && !brac)
-		{
-			if(src[start] == IGNOR_C && src[start + 1])
-				start++;
-			start++;
-			ig_b = (const char *)memchr(IGNOR_B, src[start], strlen(IGNOR_B));
-			brac = (const char *)memchr(BRACKET, src[start], strlen(BRACKET));
-		}
-	}
-	if (!brac)
-	{
-		start = 0;
-		if (ig_b)
-			return (false);
-		return (true);
-	}
+static inline ssize_t strfind(const char *str, char c){
 	size_t i = 0;
-	for (; BRACKET[i] && BRACKET[i] != *brac; i++);
-	if (i % 2)
-	{
-		start = 0;
-		return (false);
+	for (; str[i] && str[i] != c; i++);
+	if (str[i] && str[i] == c)
+		return (i);
+	return (-1);
+}
+
+static bool _bracket(const char *src, const char *brac, char ignor, size_t &len){
+	bool flat = true;
+	if (src[0] == brac[0]){
+		len++;
+		flat = false;
 	}
-	return (_r_bracket(src + (++start), *brac, len));
+	while (1){
+		ssize_t b = strfind(brac, src[len]);
+		while (src[len] && src[len] != brac[1] && b < 0){
+			if(src[len] == ignor){
+				if (src[len + 1])
+					len++;
+				else
+					return (false);
+			}
+			len++;
+			b = strfind(brac, src[len]);
+		}
+		if (src[len] == brac[1]){
+			len++;
+			return (true);
+		}else if (!src[len] || b % 2)
+			return (false);
+		if(flat && !b)
+			return (true);
+		bool r = _bracket(src, brac + b, ignor, len);
+		if (!r)
+			return (false);
+	}
+	return (false);
 }
 
-std::string in_bracket(std::string){
-
+std::string in_bracket(std::string &str){
+	size_t len = 0;
+	bool r = _bracket(str.c_str(), "{}''", '\\', len);
+	if (r){
+		std::string ret;
+		if (str[0] == '{')
+			ret = str.substr(1,len - 2);
+		else
+			ret = str.substr(0, len);
+		str = str.substr(len, str.length() - len);
+		return(ret);
+	}
+	return(std::string(""));
 }
+
+//#include<iostream>
+//int main (int argc, char *argv[]){
+//	if (argc != 2){
+//		std::cerr << "arg error" << std::endl;
+//		return(1);
+//	}
+//	std::string input = argv[1];
+//	std::cout << "input>" << input << "$"<< std::endl;
+//	std::cout << "in_bracket>" << in_bracket(input) << "$"<< std::endl;
+//	std::cout << "input>" << input << "$"<< std::endl;
+//	return (0);
+//}
+/* 
+blyu@xiaowendeiMac utils % ./a.out "{{}}aaaaa"
+input>{{}}aaaaa$
+in_bracket>{}$
+input>aaaaa$
+blyu@xiaowendeiMac utils % ./a.out "{a{\'}aa}aa" 
+input>{a{\'}aa}aa$
+in_bracket>a{\'}aa$
+input>aa$
+blyu@xiaowendeiMac utils % ./a.out "{{'}'}aaaaa"
+input>{{'}'}aaaaa$
+in_bracket>$
+input>{{'}'}aaaaa$
+blyu@xiaowendeiMac utils % ./a.out "{a{\'}a}a}aa"
+input>{a{\'}a}a}aa$
+in_bracket>a{\'}a$
+input>a}aa$
+ */

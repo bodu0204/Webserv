@@ -1,6 +1,6 @@
 #include "handler.hpp"
 
-handler::handler(){};//not call
+handler::handler(){}//not call
 
 handler::handler(int descriptor):desc(descriptor){}
 

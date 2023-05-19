@@ -8,7 +8,7 @@ class config
 private:
 	bool is_faile;
 	std::vector<port_conf> ports;
-	config();
+	config(); 
 public:
 	config(std::string);
 	config(const config &);
