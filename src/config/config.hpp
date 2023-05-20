@@ -3,12 +3,11 @@
 #include <vector>
 #include "port_conf.hpp"
 
-class config
-{
+class config{
 private:
 	bool is_faile;
 	std::vector<port_conf> ports;
-	config(); 
+	config();
 public:
 	config(std::string);
 	config(const config &);
@@ -17,4 +16,3 @@ public:
 	bool faile() const;
 	~config();
 };
-

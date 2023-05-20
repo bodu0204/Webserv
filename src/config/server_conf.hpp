@@ -3,8 +3,7 @@
 #include <vector>
 #include "location_conf.hpp"
 
-class server_conf
-{
+class server_conf{
 private:
 	bool is_faile;
 	std::string name;
@@ -14,6 +13,6 @@ public:
 	server_conf(std::string);
 	server_conf(const server_conf &);
 	const server_conf &operator=(const server_conf &);
-	bool faile();
+	bool faile() const;
 	~server_conf();
 };

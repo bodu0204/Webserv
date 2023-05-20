@@ -3,8 +3,7 @@
 #include <vector>
 #include "location_conf.hpp"
 
-class location_conf
-{
+class location_conf{
 private:
 	bool is_faile;
 	std::string root;

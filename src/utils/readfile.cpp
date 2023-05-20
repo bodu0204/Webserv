@@ -1,9 +1,10 @@
-#include <string>
 #include <fcntl.h>
 #include <unistd.h>
+#include "utils.hpp"
+
 #define BUFFER_SIZE 1024
 
-std::string read_file(const char *file_name){
+std::string utils::read_file(const char *file_name){
 	std::string ret;
 	int fd = open(file_name, O_RDONLY);
 

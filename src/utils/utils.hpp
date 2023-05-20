@@ -1,7 +1,8 @@
 #pragma once
 #include <string>
-namespace utils
-{
+namespace utils{
 	std::string read_file(const char *);
-	std::string in_bracket(std::string);
+	std::string get_next_token(std::string &);
+	std::string trim_sp(const std::string &);
+	std::string trim_meta(const std::string &);
 }
