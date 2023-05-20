@@ -60,6 +60,10 @@ static size_t _token(const char *src){
 		for (; src[len] && src[len] != '\'' &&!isspace(src[len]); len++);
 	}
 	for (; src[len] && isspace(src[len]); len++);
+	if (src[len] == ';'){
+		len++;
+		for (; src[len] && isspace(src[len]); len++);
+	}
 	return (len);
 }
 

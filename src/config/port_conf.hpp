@@ -12,16 +12,15 @@ enum protocol{
 class port_conf{
 private:
 	bool is_faile;
-	int port;
-	protocol proto;
+	int _port;
+	protocol _proto;
 	std::map<std::string,server_conf>servers;
-public:
 	port_conf();
+public:
+	port_conf(std::string);
 	port_conf(const port_conf &);
 	const port_conf &operator=(const port_conf &);
-	void set_protocol(protocol);
-	void set_port(int);
-	void set_other(int);
+	int port() const;
 	protocol protocol() const;
 	bool faile() const;
 	~port_conf();

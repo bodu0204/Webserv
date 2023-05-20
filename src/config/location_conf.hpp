@@ -6,8 +6,8 @@
 class location_conf{
 private:
 	bool is_faile;
-	std::string root;
-	std::string index;
+	std::string _root;
+	std::string _index;
 	location_conf();
 public:
 	location_conf(std::string);

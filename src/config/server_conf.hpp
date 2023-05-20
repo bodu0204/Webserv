@@ -6,7 +6,7 @@
 class server_conf{
 private:
 	bool is_faile;
-	std::string name;
+	std::string _name;
 	std::vector<location_conf>locations;
 	server_conf();
 public:

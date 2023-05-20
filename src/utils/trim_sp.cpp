@@ -15,8 +15,7 @@ static bool _trim_sp(const char *src, size_t &start, size_t &len){
 	len = 0;
 	for (; src[start] && isspace(src[start]); start++);
 	for (; src[start + len]; len++);
-	if (!len)
-		return (false);
-	for (; isspace(src[start + len - 1]); len--);
+	for (; len && isspace(src[start + len - 1]); len--);
+	if (src[start + len - 1] == '\\' && src[start + len - 1]) len++;
 	return (true);
 }
