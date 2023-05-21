@@ -7,12 +7,12 @@ class config{
 private:
 	bool is_faile;
 	std::vector<port_conf> ports;
-	config();
 public:
+	config();
 	config(std::string);
 	config(const config &);
 	const config &operator=(const config &);
-	std::vector<port_conf> port_confs() const;
+	const std::vector<port_conf>& port_confs() const;
 	bool faile() const;
 	~config();
 };
