@@ -1,9 +1,11 @@
 #include <iostream>
 #include <string>
-#include <string.h>
-#include <sys/socket.h>
 #include <vector>
 #include <map>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/ip.h>
+#include <unistd.h>
 #include "utils/utils.hpp"
 #include "config/config.hpp"
 #include "config/port_conf.hpp"
@@ -19,6 +21,7 @@ static inline int is_argerror(int argc, char *argv[]){
 }
 
 void run(std::map<int, handler *>&);
+void close(std::map<int, handler *>&);
 
 int main(int argc, char *argv[]){
 	if (is_argerror(argc, argv)){
@@ -38,11 +41,35 @@ int main(int argc, char *argv[]){
 	const std::vector<port_conf>& ports = conf.port_confs();
 	std::map<int, handler *>handlers;
 	for (std::vector<port_conf>::const_iterator i = ports.begin(); i != ports.end(); i++){
-		int disc;
-
-		//socketを確立
-
-		accept_handker *ah = new accept_handker(disc, *i);
+		int disc = socket(AF_INET, SOCK_STREAM, 0);
+		if (disc < 0){
+			std::cerr << "ERROR can not make socket !" << std::endl;
+			close(handlers);
+			return (1);
+		}
+		{
+			bool optval = true;
+			setsockopt(disc, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
+		}
+		{
+			struct sockaddr_in addr;
+			addr.sin_family = AF_INET;
+			addr.sin_port = htonl(static_cast<uint32_t>(i->port()));
+			addr.sin_addr.s_addr = INADDR_ANY;
+			if (bind(disc, (const struct sockaddr *)&addr, sizeof(addr)) == -1){
+				std::cerr << "ERROR socket can not bind !" << std::endl;
+				close(handlers);
+				close(disc);
+				return (1);
+			}
+		}
+		if (listen(disc, SOMAXCONN) == -1){
+			std::cerr << "ERROR socket can not listen !" << std::endl;
+			close(handlers);
+			close(disc);
+			return (1);
+		}
+		accept_handker *ah  = new accept_handker(disc, *i);
 		handlers[i->port()] = ah;
 	}
 	run(handlers);
