@@ -1,11 +1,16 @@
 #include "config.hpp"
 #include "../utils/utils.hpp"
 
-config::config():is_faile(true),ports(){}//not call
+config::config():is_faile(true),ports(){}
+
 config::config(const config &src):is_faile(src.is_faile),ports(src.ports){}
+
 const config &config::operator=(const config &src){this->is_faile = src.is_faile;this->ports;}
+
 config::~config(){this->ports.clear();}
+
 const std::vector<port_conf>& config::port_confs() const{return (this->ports);}
+
 bool config::faile() const{return (this->is_faile);}
 
 config::config(std::string src):is_faile(false),ports(){

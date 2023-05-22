@@ -1,12 +1,10 @@
 #pragma once
 #include <string>
 #include <vector>
-#include "location_conf.hpp"
 
 class location_conf{
 private:
 	bool is_faile;
-	std::string _perturn;
 	std::string _root;
 	std::string _index;
 	location_conf();

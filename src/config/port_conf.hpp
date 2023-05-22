@@ -21,7 +21,7 @@ public:
 	port_conf(std::string);
 	port_conf(const port_conf &);
 	const port_conf &operator=(const port_conf &);
-	void marge(port_conf);
+	void marge(const port_conf &);
 	int port() const;
 	protocol protocol() const;
 	const server_conf &server(std::string) const;
