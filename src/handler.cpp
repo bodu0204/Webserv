@@ -4,8 +4,8 @@ handler::handler():descriptor(0), events(0),_life(0),_limit(time(NULL)){}//not c
 
 const handler &handler::operator=(const handler& src){return *this;}//not call
 
-handler::handler(int _descriptor, unsigned _events ,unsigned life):\
-	descriptor(_descriptor),events(_events),_life(life),_limit(time(NULL) + life){}
+handler::handler(int _descriptor, unsigned _events ,long life):\
+	descriptor(_descriptor),events(_events),_life(life),_limit(life==LONG_MAX ? life : time(NULL) + life){}
 
 handler::handler(const handler& src):descriptor(src.descriptor),events(src.events),_life(src._life),_limit(src._limit){}
 

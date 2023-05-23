@@ -13,16 +13,16 @@ protected:
 	std::vector<handler *> child;
 	std::vector<handler *> add;
 	std::vector<handler *> del;
-	handler(int, unsigned, unsigned life = LONG_MAX);
+	handler(int, unsigned, long life = LONG_MAX);
 	handler(const handler&);
 	void set_time();
 public:
 	const int descriptor;
-	const unsigned events;
+	const short events;
 	std::vector<handler *> get_add_handler();
 	std::vector<handler *> get_del_handler();
 	std::vector<handler *> all_child() const;
 	time_t limit(time_t) const;
-	virtual void action() = 0;
+	virtual void action(short) = 0;//readが先
 	virtual ~handler() = 0;
 };

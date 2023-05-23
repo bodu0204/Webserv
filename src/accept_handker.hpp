@@ -11,6 +11,6 @@ public:
 	accept_handker(int, const port_conf &);
 	accept_handker(const accept_handker&);
 	const accept_handker &operator=(const accept_handker&);
-	void action();
+	void action(short);
 	~accept_handker();
 };
