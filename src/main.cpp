@@ -6,6 +6,7 @@
 #include <netinet/in.h>
 #include <netinet/ip.h>
 #include <unistd.h>
+#include <poll.h>
 #include "utils/utils.hpp"
 #include "config/config.hpp"
 #include "config/port_conf.hpp"
@@ -14,14 +15,11 @@
 
 #define EXTENSION ".conf"
 
-static inline int is_argerror(int argc, char *argv[]){
-	return (argc != 2 \
-		|| strlen(argv[1]) < strlen(EXTENSION) \
-		|| memcmp(argv[1] + strlen(argv[1]) - strlen(EXTENSION), EXTENSION, sizeof(EXTENSION)));
-}
+std::map<int, handler *> handlers;
 
-void run(std::map<int, handler *>&);
-void close(std::map<int, handler *>&);
+static inline int is_argerror(int argc, char *argv[]);
+static void run();
+static void close_handler();
 
 int main(int argc, char *argv[]){
 	if (is_argerror(argc, argv)){
@@ -44,7 +42,7 @@ int main(int argc, char *argv[]){
 		int disc = socket(AF_INET, SOCK_STREAM, 0);
 		if (disc < 0){
 			std::cerr << "ERROR can not make socket !" << std::endl;
-			close(handlers);
+			close_handler();
 			return (1);
 		}
 		{
@@ -58,20 +56,58 @@ int main(int argc, char *argv[]){
 			addr.sin_addr.s_addr = INADDR_ANY;
 			if (bind(disc, (const struct sockaddr *)&addr, sizeof(addr)) == -1){
 				std::cerr << "ERROR socket can not bind !" << std::endl;
-				close(handlers);
+				close_handler();
 				close(disc);
 				return (1);
 			}
 		}
 		if (listen(disc, SOMAXCONN) == -1){
 			std::cerr << "ERROR socket can not listen !" << std::endl;
-			close(handlers);
+			close_handler();
 			close(disc);
 			return (1);
 		}
 		accept_handker *ah  = new accept_handker(disc, *i);
 		handlers[i->port()] = ah;
 	}
-	run(handlers);
+	run();
 	return (0);
+}
+
+static void run(){
+	std::vector<struct pollfd>pollfds;
+	for (std::map<int, handler *>::iterator i = handlers.begin(); i != handlers.end(); i++){
+		struct pollfd p = {0};
+		p.fd = i->first;
+		p.events = i->second->events;
+		pollfds.push_back(p);
+	}
+	while (true)
+	{
+		handler *shortest;
+		{
+			time_t now = time(NULL);
+			long t = LONG_MAX;
+			for (std::map<int, handler *>::iterator i = handlers.begin(); i != handlers.end(); i++){}
+		}
+	}
+	
+}
+
+static inline int is_argerror(int argc, char *argv[]){
+	return (argc != 2 \
+		|| strlen(argv[1]) < strlen(EXTENSION) \
+		|| memcmp(argv[1] + strlen(argv[1]) - strlen(EXTENSION), EXTENSION, sizeof(EXTENSION)));
+}
+
+static void rm_handler(handler* target){
+}
+
+static void close_handler(){
+	for (std::map<int ,handler*>::iterator i = handlers.begin(); i != handlers.end(); i++){
+		delete i->second;
+		close(i->first);
+	}
+	handlers.clear();
+	return ;
 }

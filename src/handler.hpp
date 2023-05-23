@@ -1,26 +1,28 @@
 #pragma once
 #include <vector>
-
-#define HANDLER_READ
-#define HANDLER_WRITE
+#include <time.h>
 
 class handler
 {
 private:
-	int desc;
-	unsigned _rw;
+	const unsigned _life;
+	time_t _limit;
 	handler();
+	virtual const handler &operator=(const handler&);
 protected:
+	std::vector<handler *> child;
 	std::vector<handler *> add;
 	std::vector<handler *> del;
-	handler(int, unsigned);
+	handler(int, unsigned, unsigned life = LONG_MAX);
 	handler(const handler&);
-	const handler &operator=(const handler&);
+	void set_time();
 public:
-	const std::vector<handler *> get_add_handler();
-	const std::vector<handler *> get_del_handler();
-	int descriptor() const;
-	unsigned descriptor_status() const;
+	const int descriptor;
+	const unsigned events;
+	std::vector<handler *> get_add_handler();
+	std::vector<handler *> get_del_handler();
+	std::vector<handler *> all_child() const;
+	time_t limit(time_t) const;
 	virtual void action() = 0;
 	virtual ~handler() = 0;
 };

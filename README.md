@@ -2,26 +2,26 @@
 
 ## FUNCTION
 ###### ---------------------------------------------------------------------------------
-### [tcp(7)](http://linuxjm.osdn.jp/html/LDP_man-pages/man7/tcp.7.html)
-### [ip(7)](http://linuxjm.osdn.jp/html/LDP_man-pages/man7/ip.7.html)
+### [tcp(7)](https://linuxjm.osdn.jp/html/LDP_man-pages/man7/tcp.7.html)
+### [ip(7)](https://linuxjm.osdn.jp/html/LDP_man-pages/man7/ip.7.html)
 ###### ---------------------------------------------------------------------------------
-### [socket(2)](http://linuxjm.osdn.jp/html/LDP_man-pages/man2/socket.2.html) [socket(7)](http://linuxjm.osdn.jp/html/LDP_man-pages/man7/socket.7.html)
-### [setsockopt(2)](http://linuxjm.osdn.jp/html/LDP_man-pages/man2/getsockopt.2.html)
-### [connect(2)](http://linuxjm.osdn.jp/html/LDP_man-pages/man2/connect.2.html)
-### [bind(2)](http://linuxjm.osdn.jp/html/LDP_man-pages/man2/bind.2.html)
-### [listen(2)](http://linuxjm.osdn.jp/html/LDP_man-pages/man2/listen.2.html)
-### [accept(2)](http://linuxjm.osdn.jp/html/LDP_man-pages/man2/accept.2.html)
-### [send(2)](http://linuxjm.osdn.jp/html/LDP_man-pages/man2/send.2.html)
-### [recv(2)](http://linuxjm.osdn.jp/html/LDP_man-pages/man2/recv.2.html)
+### [socket(2)](https://linuxjm.osdn.jp/html/LDP_man-pages/man2/socket.2.html) [socket(7)](https://linuxjm.osdn.jp/html/LDP_man-pages/man7/socket.7.html)
+### [setsockopt(2)](https://linuxjm.osdn.jp/html/LDP_man-pages/man2/getsockopt.2.html)
+### [connect(2)](https://linuxjm.osdn.jp/html/LDP_man-pages/man2/connect.2.html)
+### [bind(2)](https://linuxjm.osdn.jp/html/LDP_man-pages/man2/bind.2.html)
+### [listen(2)](https://linuxjm.osdn.jp/html/LDP_man-pages/man2/listen.2.html)
+### [accept(2)](https://linuxjm.osdn.jp/html/LDP_man-pages/man2/accept.2.html)
+### [send(2)](https://linuxjm.osdn.jp/html/LDP_man-pages/man2/send.2.html)
+### [recv(2)](https://linuxjm.osdn.jp/html/LDP_man-pages/man2/recv.2.html)
 ###### ---------------------------------------------------------------------------------
-### [epoll(7)](http://linuxjm.osdn.jp/html/LDP_man-pages/man7/epoll.7.html)
-### [poll(2)](http://linuxjm.osdn.jp/html/LDP_man-pages/man2/poll.2.html)
-### [select(2)](http://linuxjm.osdn.jp/html/LDP_man-pages/man2/select.2.html)
+### [epoll(7)](https://linuxjm.osdn.jp/html/LDP_man-pages/man7/epoll.7.html)
+### [poll(2)](https://linuxjm.osdn.jp/html/LDP_man-pages/man2/poll.2.html)
+### [select(2)](https://linuxjm.osdn.jp/html/LDP_man-pages/man2/select.2.html)
 ###### ---------------------------------------------------------------------------------
-### [fcntl(2)](http://linuxjm.osdn.jp/html/LDP_man-pages/man2/fcntl.2.html)
+### [fcntl(2)](https://linuxjm.osdn.jp/html/LDP_man-pages/man2/fcntl.2.html)
 ###### ---------------------------------------------------------------------------------
-### [signal(7)](http://linuxjm.osdn.jp/html/LDP_man-pages/man7/signal.7.html)
-### [syscalls(2)](http://linuxjm.osdn.jp/html/LDP_man-pages/man2/syscalls.2.html)
+### [signal(7)](https://linuxjm.osdn.jp/html/LDP_man-pages/man7/signal.7.html)
+### [syscalls(2)](https://linuxjm.osdn.jp/html/LDP_man-pages/man2/syscalls.2.html)
 
 ## HTTP
 ### [RFC 7230](https://tex2e.github.io/rfc-translater/html/rfc7230.html)

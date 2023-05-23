@@ -12,7 +12,7 @@ public:
 	location_conf(std::string, std::string);
 	location_conf(const location_conf &);
 	const location_conf &operator=(const location_conf &);
-	bool faile();
+	bool faile() const;
 	~location_conf();
 
 	static const location_conf error;

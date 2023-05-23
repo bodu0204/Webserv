@@ -10,7 +10,9 @@ const location_conf &location_conf::operator=(const location_conf &src){
 	this->_index = src._index;
 	return (*this);
 }
-bool location_conf::faile(){return (this->is_faile);}
+
+bool location_conf::faile() const{return (this->is_faile);}
+
 location_conf::~location_conf(){return ;}
 
 location_conf::location_conf(std::string root, std::string index):is_faile(false), _root(root), _index(root){
