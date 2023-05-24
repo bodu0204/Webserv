@@ -11,29 +11,32 @@ handler::handler(const handler& src):descriptor(src.descriptor),events(src.event
 
 handler::~handler(){}
 
-std::vector<handler *> handler::get_add_handler(){
-	std::vector<handler *> ret = this->add;
+std::set<handler *> handler::get_add_handler(){
+	std::set<handler *> ret = this->add;
 	this->add.clear();
 	return (ret);
 }
 
-std::vector<handler *> handler::get_del_handler(){
-	std::vector<handler *> ret = this->del;
+std::set<handler *> handler::get_del_handler(){
+	std::set<handler *> ret = this->del;
 	this->del.clear();
 	return (ret);
 }
 
-void handler::set_time(){this->_limit = time(NULL) + this->_life; return ;}
+void handler::set_time(){
+	this->_limit = this->_life==LONG_MAX ? this->_life : time(NULL) + this->_life;
+	return ;
+}
 
-std::vector<handler *> handler::all_child() const{
-	std::vector<handler *> ret;
-	for (std::vector<handler *>::const_iterator i = this->child.begin(); i != this->child.end(); i++)
+std::set<handler *> handler::all_child() const{
+	std::set<handler *> ret;
+	for (std::set<handler *>::const_iterator i = this->child.begin(); i != this->child.end(); i++)
 	{
-		std::vector<handler *> cv = (*i)->all_child();
-		ret.insert(ret.end(), cv.begin(), cv.end());
+		std::set<handler *> cv = (*i)->all_child();
+		ret.insert(cv.begin(), cv.end());
 	}
-	ret.insert(ret.end(), this->child.begin(), this->child.end());
+	ret.insert(this->child.begin(), this->child.end());
 	return (ret);
 }
 
-time_t handler::limit(time_t now)const{return(now - this->_limit);}
+time_t handler::limit()const{return(this->_limit);}

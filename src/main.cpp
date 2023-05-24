@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <set>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
@@ -75,23 +76,73 @@ int main(int argc, char *argv[]){
 }
 
 static void run(){
-	std::vector<struct pollfd>pollfds;
+	std::map<time_t, std::set<int>>schedule;
 	for (std::map<int, handler *>::iterator i = handlers.begin(); i != handlers.end(); i++){
-		struct pollfd p = {0};
-		p.fd = i->first;
-		p.events = i->second->events;
-		pollfds.push_back(p);
+		schedule[i->second->limit()].insert(i->first);
 	}
 	while (true)
 	{
-		handler *shortest;
+		size_t polllen = handlers.size();
+		struct pollfd pollfds[polllen];
 		{
-			time_t now = time(NULL);
-			long t = LONG_MAX;
-			for (std::map<int, handler *>::iterator i = handlers.begin(); i != handlers.end(); i++){}
+			size_t l = 0;
+			std::map<int, handler *>::iterator i = handlers.begin();
+			for (; i != handlers.end(); i++, l++){
+				pollfds[l].fd = i->first;
+				pollfds[l].events = i->second->events;
+				pollfds[l].revents = 0;
+			}
+		}
+		int timeout = schedule.begin()->first - time(NULL);
+		if (timeout < 0)
+			timeout = 0;
+		int ev = poll(pollfds, polllen, timeout);
+		std::set<handler *> add;
+		std::set<handler *> del;
+		for (size_t i = 0; ev > 0; i++){
+			if (pollfds[i].revents){
+				std::set<handler *> buf;
+				handler *h = handlers[pollfds[i].fd];
+				h->action(pollfds[i].revents);
+				schedule[h->limit()].insert(h->descriptor);
+				buf = h->get_add_handler();
+				add.insert(buf.begin(), buf.end());
+				buf = h->get_add_handler();
+				del.insert(buf.begin(), buf.end());
+				ev--;
+			}
+		}
+		{
+			time_t t = schedule.begin()->first;
+			std::set<int> &buf = schedule.begin()->second;
+			for (std::set<int>::iterator i = buf.begin(); i != buf.end(); i++)
+			{
+				handler *h = handlers[*i];
+				if (h->limit() == t)
+				{
+					std::set<handler *> ch = h->all_child();
+					del.insert(ch.begin(), ch.end());
+					del.insert(h);
+				}
+			}
+			schedule.erase(t);
+		}
+		for (std::set<handler *>::iterator i = add.begin(); i != add.end(); i++)
+		{
+			schedule[(*i)->limit()].insert((*i)->descriptor);
+			handlers[(*i)->descriptor] = *i;
+		}
+		for (std::set<handler *>::iterator i = del.begin(); i != del.end(); i++)
+		{
+			handler *h = *i;
+			handlers.erase(h->descriptor);
+			if (schedule.find(h->limit()) != schedule.end())
+				schedule[h->limit()].erase(h->descriptor);
+			close(h->descriptor);
+			delete h;
 		}
 	}
-	
+	return ;
 }
 
 static inline int is_argerror(int argc, char *argv[]){
