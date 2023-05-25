@@ -12,7 +12,7 @@
 #include "config/config.hpp"
 #include "config/port_conf.hpp"
 #include "handler.hpp"
-#include "accept_handker.hpp"
+#include "accept_handler.hpp"
 
 #define EXTENSION ".conf"
 
@@ -68,7 +68,7 @@ int main(int argc, char *argv[]){
 			close(disc);
 			return (1);
 		}
-		accept_handker *ah  = new accept_handker(disc, *i);
+		accept_handler *ah  = new accept_handler(disc, *i);
 		handlers[i->port()] = ah;
 	}
 	run();
