@@ -20,9 +20,10 @@ void echo_handler::_action(short event){
 			dup2(fds[STDOUT_FILENO], STDOUT_FILENO);
 			close(fds[0]);
 			close(fds[1]);
+			char cmd[] = "/bin/cat";
 			char *args[2];
 			char *env[1];
-			args[0] = "/bin/cat";
+			args[0] = cmd;
 			args[1] = NULL;
 			env[0] = NULL;
 			execve(args[0], args, env);

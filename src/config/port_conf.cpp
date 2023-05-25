@@ -1,4 +1,3 @@
-
 #include "port_conf.hpp"
 #include "../utils/utils.hpp"
 
@@ -76,20 +75,20 @@ port_conf::port_conf(std::string src):is_faile(false), _port(-1), _proto(undfind
     }
 	if (this->_proto == undfind_protocol){this->is_faile = true; return;}
 	if (this->_proto == tcp_echo){
-		if (server_name.length() || location.length()){this->is_faile = true; return;}
-//catを呼び出すようなserver_conf sc("?????????????");
+		if (server_name.length() || location.length()){this->is_faile = true;}
 		return;
 	}
 	server_conf sc(location);
 	if (sc.faile()){this->is_faile = true; return;}
-	this->_servers[server_name] = sc;
+	this->_servers.insert(std::pair<std::string, server_conf>(server_name, sc));
+	//this->_servers[server_name] = sc;
     return ;
 }
 
 void port_conf::marge(const port_conf &src){
 	for (std::map<std::string, server_conf>::const_iterator i = src._servers.begin(); i != src._servers.end(); i++){
 		if (this->_servers.find(i->first) == this->_servers.end()){
-			this->_servers[i->first] = i->second;
+			this->_servers.insert(std::pair<std::string, server_conf>(i->first, i->second));
 		}else{this->is_faile = true; return;}
 	}
 	return ;

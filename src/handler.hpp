@@ -6,7 +6,7 @@
 class handler
 {
 private:
-	const unsigned _life;
+	const long _life;
 	time_t _limit;
 	std::set<handler *> _child;
 	std::set<handler *> _add;

@@ -17,7 +17,7 @@ std::string utils::new_token(std::string &src, bool &error, bool trim_bracket, b
     	if (!buf.length()) {error = true; return (std::string(""));}
 	}
 	if (trim_bracket){
-        if (buf.length() <= 2 || buf[0] != '{' || buf[buf.length() - 1] != '}') {error = true; return ;}
+        if (buf.length() <= 2 || buf[0] != '{' || buf[buf.length() - 1] != '}') {error = true; return (std::string(""));}
         buf = buf.substr(1, buf.length() - 2);
     	buf = utils::trim_sp(buf);
     	if (!buf.length()) {error = true; return (std::string(""));}

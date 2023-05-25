@@ -71,4 +71,4 @@ void handler::callback(std::string){}
 
 handler::handler():parent(0),descriptor(0), events(0),_life(0),_limit(time(NULL)){}//not call
 const handler &handler::operator=(const handler&){return *this;}//not call
-handler::handler(const handler& src):handler(){}//not call
+handler::handler(const handler& src):parent(0),descriptor(0), events(0),_life(0),_limit(time(NULL)){}//not call

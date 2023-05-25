@@ -76,7 +76,7 @@ int main(int argc, char *argv[]){
 }
 
 static void run(){
-	std::map<time_t, std::set<int>>schedule;
+	std::map<time_t, std::set<int> > schedule;
 	for (std::map<int, handler *>::iterator i = handlers.begin(); i != handlers.end(); i++){
 		schedule[i->second->limit()].insert(i->first);
 	}

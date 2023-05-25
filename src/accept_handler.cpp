@@ -34,6 +34,9 @@ void accept_handler::_action(short event){
 		//this->set_add(/* code */);
 		close(desc);//test
 		break;
+	default :
+		close(desc);//test
+		break;
 	}
 }
 

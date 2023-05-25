@@ -5,7 +5,7 @@ config::config():is_faile(true),ports(){}
 
 config::config(const config &src):is_faile(src.is_faile),ports(src.ports){}
 
-const config &config::operator=(const config &src){this->is_faile = src.is_faile;this->ports;}
+const config &config::operator=(const config &src){this->is_faile = src.is_faile;this->ports = src.ports;return(*this);}
 
 config::~config(){this->ports.clear();}
 
