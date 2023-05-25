@@ -13,7 +13,7 @@ handler(NULL, descriptor, POLL_IN), _conf(conf){}
 accept_handler::~accept_handler(){handler::~handler();}
 
 void accept_handler::_action(short event){
-	if (event & ~POLL_IN){
+	if (event & ~this->events){
 		this->set_del(this->all_child());
 		this->set_del(this);
 		return ;
@@ -24,7 +24,7 @@ void accept_handler::_action(short event){
 	switch (this->_conf.protocol())
 	{
 	case tcp_echo:
-		this->set_add(new echo_handler(desc));
+		this->set_add(new echo_handler(this, desc));
 		break;
 	case http:
 		//this->set_add(/* code */);

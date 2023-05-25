@@ -15,7 +15,6 @@ private:
 	handler();//not use
 	handler(const handler&);//not use
 	const handler &operator=(const handler&);//not use
-	virtual void callback_end(handler *);
 protected:
 	handler *parent;
 	handler(handler *,int, unsigned, long life = LONG_MAX);
@@ -23,7 +22,7 @@ protected:
 	void set_add(std::set<handler *>);
 	void set_del(handler *);
 	void set_del(std::set<handler *>);
-	virtual void callback(std::string);
+	virtual void callback_end(handler *);
 public:
 	const int descriptor;
 	const short events;
@@ -31,6 +30,7 @@ public:
 	std::set<handler *> get_del_handler();
 	std::set<handler *> all_child() const;
 	time_t limit() const;
+	virtual void callback(std::string);
 	void action(short);
 	virtual ~handler(); //必ず呼ぶ
 };

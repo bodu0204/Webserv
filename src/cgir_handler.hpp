@@ -9,9 +9,7 @@ private:
 	cgir_handler();//not use
 	cgir_handler(const cgir_handler&);//not use
 	const cgir_handler &operator=(const cgir_handler&);//not use
-protected:
-	void callback(std::string);
 public:
-	cgir_handler(int);
+	cgir_handler(handler *,int);
 	~cgir_handler();
 };
