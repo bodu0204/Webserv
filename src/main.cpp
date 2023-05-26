@@ -14,6 +14,8 @@
 #include "handler.hpp"
 #include "accept_handler.hpp"
 
+#include "debug.h"
+
 #define EXTENSION ".conf"
 
 std::map<int, handler *> handlers;
@@ -38,7 +40,6 @@ int main(int argc, char *argv[]){
 		return (1);
 	}
 	const std::vector<port_conf>& ports = conf.port_confs();
-	std::map<int, handler *>handlers;
 	for (std::vector<port_conf>::const_iterator i = ports.begin(); i != ports.end(); i++){
 		int disc = socket(AF_INET, SOCK_STREAM, 0);
 		if (disc < 0){
@@ -53,7 +54,7 @@ int main(int argc, char *argv[]){
 		{
 			struct sockaddr_in addr;
 			addr.sin_family = AF_INET;
-			addr.sin_port = htonl(static_cast<uint32_t>(i->port()));
+			addr.sin_port = htons(i->port());
 			addr.sin_addr.s_addr = INADDR_ANY;
 			if (bind(disc, (const struct sockaddr *)&addr, sizeof(addr)) == -1){
 				std::cerr << "ERROR socket can not bind !" << std::endl;
@@ -69,7 +70,7 @@ int main(int argc, char *argv[]){
 			return (1);
 		}
 		accept_handler *ah  = new accept_handler(disc, *i);
-		handlers[i->port()] = ah;
+		handlers[disc] = ah;
 	}
 	run();
 	return (0);
@@ -80,6 +81,7 @@ static void run(){
 	for (std::map<int, handler *>::iterator i = handlers.begin(); i != handlers.end(); i++){
 		schedule[i->second->limit()].insert(i->first);
 	}
+T
 	while (true)
 	{
 		size_t polllen = handlers.size();
@@ -93,9 +95,11 @@ static void run(){
 				pollfds[l].revents = 0;
 			}
 		}
-		int timeout = schedule.begin()->first - time(NULL);
+		long timeout = schedule.begin()->first - time(NULL);
 		if (timeout < 0)
 			timeout = 0;
+		else if (timeout > INT_MAX)
+			timeout = INT_MAX;
 		int ev = poll(pollfds, polllen, timeout);
 		std::set<handler *> add;
 		std::set<handler *> del;

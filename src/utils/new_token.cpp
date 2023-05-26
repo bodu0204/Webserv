@@ -1,4 +1,5 @@
 #include "utils.hpp"
+#include "../debug.h"
 static bool _bracket(const char *, const char *, char , size_t &);
 static size_t _token(const char *);
 static inline ssize_t strfind(const char *, char);
@@ -7,8 +8,8 @@ static std::string get_next_token(std::string &);
 std::string utils::new_token(std::string &src, bool &error, bool trim_bracket, bool trim_last, bool no_edit){
 	if (!src.length()){error = true; return (std::string(""));}
 	std::string buf = get_next_token(src);
-	if (no_edit){return (buf);}
     if (!buf.length()) {error = true; return (std::string(""));}
+	if (no_edit){return (buf);}
     buf = utils::trim_sp(buf);
 	if (trim_last){
 		if (buf.length() <= 1 || buf[buf.length() - 1] != ';') {error = true; return (std::string(""));}
@@ -51,7 +52,7 @@ static bool _bracket(const char *src, const char *brac, char ignor, size_t &len)
 	}
 	while (1){
 		ssize_t b = strfind(brac, src[len]);
-		while (src[len] && src[len] != brac[1] && b < 0){
+		while (src[len] && b < 0){
 			if(src[len] == ignor){
 				if (src[len + 1])
 					len++;
@@ -64,10 +65,10 @@ static bool _bracket(const char *src, const char *brac, char ignor, size_t &len)
 		if (src[len] == brac[1]){
 			len++;
 			return (true);
-		}else if (!src[len] || b % 2)
-			return (false);
-		if(flat && !b)
+		}else if(flat && (!b || !src[len]))
 			return (true);
+		if (!src[len] || b % 2)
+			return (false);
 		bool r = _bracket(src, brac + b, ignor, len);
 		if (!r)
 			return (false);

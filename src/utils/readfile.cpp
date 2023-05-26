@@ -10,10 +10,11 @@ std::string utils::read_file(const char *file_name){
 
 	if (fd < 0)
 		return(std::string(""));
-	char buf[BUFFER_SIZE];
+	char buf[BUFFER_SIZE + 1];
 	ssize_t red = read(fd, buf, BUFFER_SIZE);
 	while (red > 0)
 	{
+		buf[red] = '\0';
 		ret += buf;
 		red = read(fd, buf, BUFFER_SIZE);
 	}

@@ -1,5 +1,6 @@
 #include "config.hpp"
 #include "../utils/utils.hpp"
+#include "../debug.h"
 
 config::config():is_faile(true),ports(){}
 
@@ -14,15 +15,15 @@ const std::vector<port_conf>& config::port_confs() const{return (this->ports);}
 bool config::faile() const{return (this->is_faile);}
 
 config::config(std::string src):is_faile(false),ports(){
-    while (true){
+    src = utils::trim_sp(src);
+	if (!src.length()){this->is_faile = true; return;}
+    while (src.length()){
 	    std::string buf = utils::new_token(src, this->is_faile);
         if (this->is_faile){return ;}
         if (!buf.length() && !src.length()) {return ;}
-
         if (buf == "server"){
             std::string cont = utils::new_token(src, this->is_faile, true);
             if (this->is_faile) {return ;}
-
             port_conf pc(cont);
             if (pc.faile()){this->is_faile = true; return ;}
             for (std::vector<port_conf>::iterator i = this->ports.begin(); i !=  this->ports.end(); i++){
@@ -33,7 +34,7 @@ config::config(std::string src):is_faile(false),ports(){
                     return ;
                 }
             }
-            this->ports.push_back(cont);
+            this->ports.push_back(pc);
         }else{
             this->is_faile = true; return ;}
     }

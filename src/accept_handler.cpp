@@ -5,6 +5,8 @@
 #include <poll.h>
 #include "echo_handler.hpp"
 
+#include "debug.h"
+
 #include <unistd.h>
 
 accept_handler::accept_handler(int descriptor, const port_conf &conf):\
@@ -13,6 +15,7 @@ handler(NULL, descriptor, POLL_IN), _conf(conf){}
 accept_handler::~accept_handler(){handler::~handler();}
 
 void accept_handler::_action(short event){
+T
 	if (event & ~this->events){
 		this->set_del(this->all_child());
 		this->set_del(this);
