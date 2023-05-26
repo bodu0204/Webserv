@@ -65,6 +65,7 @@
 		"iterator": "cpp",
 		"memory_resource": "cpp",
 		"set": "cpp",
-		"functional": "cpp"
+		"functional": "cpp",
+		"unistd.h": "c"
 	}
 }
