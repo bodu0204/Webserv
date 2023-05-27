@@ -12,7 +12,7 @@
 accept_handler::accept_handler(int descriptor, const port_conf &conf):\
 handler(NULL, descriptor, POLL_IN), _conf(conf){}
 
-accept_handler::~accept_handler(){handler::~handler();}
+accept_handler::~accept_handler(){}
 
 void accept_handler::_action(short event){
 T

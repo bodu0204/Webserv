@@ -5,6 +5,8 @@
 #include <sys/socket.h>
 #define BUFFERSIZE 1024
 
+#include "debug.h"
+
 void echo_handler::_action(short event){
 	if (event & ~this->events){
 		this->set_del(this->all_child());
@@ -42,24 +44,26 @@ void echo_handler::_action(short event){
 		this->set_add(this->_cgi_w);
 	}
 	if (event & POLL_IN){
-		char buff[BUFFERSIZE];
-		ssize_t r = recv(this->descriptor, buff, BUFFERSIZE - 1, 0);
+		char buff[BUFFERSIZE + 1];
+		ssize_t r = recv(this->descriptor, buff, BUFFERSIZE, 0);
 		if (r < 0){
 			this->set_del(this->all_child());
 			this->set_del(this);
 			return ;
 		}
 		buff[r] = '\0';
+Ts(buff)
 		this->_cgi_w->set_write(buff);
 	}
 	if (event & POLL_OUT && this->_res_buff.length()){
+Ts(this->_res_buff.c_str())
 		ssize_t r = send(this->descriptor, this->_res_buff.c_str(), this->_res_buff.length(), 0);
 		if (r < 0){
 			this->set_del(this->all_child());
 			this->set_del(this);
 			return ;
 		}
-		this->_res_buff.substr(r, this->_res_buff.length() - r);
+		this->_res_buff = this->_res_buff.substr(r, this->_res_buff.length() - r);
 	}
 	return ;
 }
@@ -81,7 +85,10 @@ void echo_handler::callback_end(handler *target){
 }
 
 void echo_handler::callback(std::string set){
+	bool doit= !this->_res_buff.length();
 	this->_res_buff += set;
+	if (doit)
+		this->action(POLL_OUT);
 }
 
 echo_handler::echo_handler(handler *parent,int descriptor):handler(parent, descriptor, POLL_IN|POLL_OUT, 40),_cgi_w(NULL),_cgi_r(NULL),_cgi_pid(0),_res_buff(){}
@@ -93,7 +100,6 @@ echo_handler::~echo_handler(){
      	waitpid(this->_cgi_pid, &wstatus, 0);
 		this->_cgi_pid = 0;
 	}
-	handler::~handler();
 }
 
 

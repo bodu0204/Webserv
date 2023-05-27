@@ -81,9 +81,9 @@ static void run(){
 	for (std::map<int, handler *>::iterator i = handlers.begin(); i != handlers.end(); i++){
 		schedule[i->second->limit()].insert(i->first);
 	}
-T
 	while (true)
 	{
+T_
 		size_t polllen = handlers.size();
 		struct pollfd pollfds[polllen];
 		{
@@ -98,53 +98,79 @@ T
 		long timeout = schedule.begin()->first - time(NULL);
 		if (timeout < 0)
 			timeout = 0;
-		else if (timeout > INT_MAX)
+		else if (timeout / 1000 > INT_MAX / 1000)
 			timeout = INT_MAX;
+		else
+			timeout *= 1000;
+
+for (std::map<time_t, std::set<int> >::iterator i = schedule.begin(); i != schedule.end(); i++)
+{
+Tn(i->first)
+for (std::set<int>::iterator t = i->second.begin(); t != i->second.end(); t++)
+{
+Tn(*t)
+}
+}
+Tn(timeout)
 		int ev = poll(pollfds, polllen, timeout);
+Tn(ev)
 		std::set<handler *> add;
 		std::set<handler *> del;
 		for (size_t i = 0; ev > 0; i++){
 			if (pollfds[i].revents){
 				std::set<handler *> buf;
 				handler *h = handlers[pollfds[i].fd];
+				schedule[h->limit()].erase(h->descriptor);
+				if (!schedule[h->limit()].size())
+					schedule.erase(h->limit());
 				h->action(pollfds[i].revents);
 				schedule[h->limit()].insert(h->descriptor);
 				buf = h->get_add_handler();
 				add.insert(buf.begin(), buf.end());
-				buf = h->get_add_handler();
+				buf = h->get_del_handler();
 				del.insert(buf.begin(), buf.end());
 				ev--;
 			}
 		}
+T
 		{
 			time_t t = schedule.begin()->first;
+			time_t now = time(NULL);
 			std::set<int> &buf = schedule.begin()->second;
 			for (std::set<int>::iterator i = buf.begin(); i != buf.end(); i++)
 			{
 				handler *h = handlers[*i];
-				if (h->limit() == t)
+				if (h->limit() == t && t <= now)
 				{
 					std::set<handler *> ch = h->all_child();
 					del.insert(ch.begin(), ch.end());
 					del.insert(h);
 				}
 			}
-			schedule.erase(t);
+			if (t <= now)
+				schedule.erase(t);
 		}
+Tn(add.size())
 		for (std::set<handler *>::iterator i = add.begin(); i != add.end(); i++)
 		{
 			schedule[(*i)->limit()].insert((*i)->descriptor);
 			handlers[(*i)->descriptor] = *i;
 		}
+Tn(del.size())
 		for (std::set<handler *>::iterator i = del.begin(); i != del.end(); i++)
 		{
 			handler *h = *i;
 			handlers.erase(h->descriptor);
-			if (schedule.find(h->limit()) != schedule.end())
+			if (schedule.find(h->limit()) != schedule.end()){
 				schedule[h->limit()].erase(h->descriptor);
+				if (!schedule[h->limit()].size())
+					schedule.erase(h->limit());
+			}
 			close(h->descriptor);
+TESTn("delete", h->descriptor)
 			delete h;
 		}
+T
 	}
 	return ;
 }
