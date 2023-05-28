@@ -21,8 +21,6 @@ void cgir_handler::_action(short event){
 		return ;
 	}
 	buff[r] = '\0';
-Tn(r)
-Ts(buff)
 	if (this->parent)
 		this->parent->callback(buff);
     return ;

@@ -15,7 +15,6 @@ handler(NULL, descriptor, POLL_IN), _conf(conf){}
 accept_handler::~accept_handler(){}
 
 void accept_handler::_action(short event){
-T
 	if (event & ~this->events){
 		this->set_del(this->all_child());
 		this->set_del(this);
