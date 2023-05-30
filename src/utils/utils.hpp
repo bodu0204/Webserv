@@ -6,4 +6,12 @@ namespace utils{
 	std::string trim_sp(const std::string &);
 	std::string trim_meta(const std::string &);
 	bool is_numstring(const char *);
+	namespace meta{
+		bool _bracket(const char *, const char *, char , size_t &);
+		struct area
+		{
+			char *start;
+			size_t len;
+		};
+	}
 }

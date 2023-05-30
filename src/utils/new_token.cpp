@@ -1,8 +1,6 @@
 #include "utils.hpp"
 #include "../debug.h"
-static bool _bracket(const char *, const char *, char , size_t &);
 static size_t _token(const char *);
-static inline ssize_t strfind(const char *, char);
 static std::string get_next_token(std::string &);
 
 std::string utils::new_token(std::string &src, bool &error, bool trim_bracket, bool trim_last, bool no_edit){
@@ -31,7 +29,7 @@ std::string utils::new_token(std::string &src, bool &error, bool trim_bracket, b
 
 static std::string get_next_token(std::string &str){
 	size_t len = 0;
-	bool r = _bracket(str.c_str(), "{}''", '\\', len);
+	bool r = utils::meta::_bracket(str.c_str(), "{}''", '\\', len);
 	if (r){
 		std::string ret;
 		if (str[0] == '{')
@@ -44,45 +42,13 @@ static std::string get_next_token(std::string &str){
 	return(std::string(""));
 }
 
-static bool _bracket(const char *src, const char *brac, char ignor, size_t &len){
-	bool flat = true;
-	if (src[len] == brac[0]){
-		len++;
-		flat = false;
-	}
-	while (1){
-		ssize_t b = strfind(brac, src[len]);
-		while (src[len] && b < 0){
-			if(src[len] == ignor){
-				if (src[len + 1])
-					len++;
-				else
-					return (false);
-			}
-			len++;
-			b = strfind(brac, src[len]);
-		}
-		if (src[len] == brac[1]){
-			len++;
-			return (true);
-		}else if(flat && (!b || !src[len]))
-			return (true);
-		if (!src[len] || b % 2)
-			return (false);
-		bool r = _bracket(src, brac + b, ignor, len);
-		if (!r)
-			return (false);
-	}
-	return (false);
-}
-
 static size_t _token(const char *src){
 	size_t len = 0;
 	for (; src[len] && isspace(src[len]); len++);
 	while (src[len] && !isspace(src[len]))
 	{
 		if (src[len] == '\'')
-			_bracket(src, "''", '\\', len);
+			utils::meta::_bracket(src, "''", '\\', len);
 		for (; src[len] && src[len] != '\'' &&!isspace(src[len]); len++);
 	}
 	for (; src[len] && isspace(src[len]); len++);
@@ -91,12 +57,4 @@ static size_t _token(const char *src){
 		for (; src[len] && isspace(src[len]); len++);
 	}
 	return (len);
-}
-
-static inline ssize_t strfind(const char *str, char c){
-	size_t i = 0;
-	for (; str[i] && str[i] != c; i++);
-	if (str[i] && str[i] == c)
-		return (i);
-	return (-1);
 }
