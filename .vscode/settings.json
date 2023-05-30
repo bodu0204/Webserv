@@ -66,6 +66,7 @@
 		"memory_resource": "cpp",
 		"set": "cpp",
 		"functional": "cpp",
-		"unistd.h": "c"
+		"unistd.h": "c",
+		"stack": "cpp"
 	}
 }
