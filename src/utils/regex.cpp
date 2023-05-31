@@ -51,6 +51,7 @@ size_t _regex_std(const char *target, const utils::meta::area &search, size_t mo
 	b.len = search.len - sl - a.len;
 	if (search.start[sl] == '('){
 		std::stack<size_t>s;
+		std::vector<size_t>r;
 		size_t l;
 		switch (c)
 		{
@@ -58,11 +59,11 @@ size_t _regex_std(const char *target, const utils::meta::area &search, size_t mo
 		case '?':
 			if (!b.len){
 				if (more <= ret)
-					return (ret);				
+					r.push_back(ret);				
 			}else{
 				l = _regex_std(target + ret, b, more > ret ? more - ret : 0);
 				if (l)
-					return (ret + l);				
+					r.push_back(ret + l);				
 			}
 		case '+':
 		default :
@@ -75,11 +76,11 @@ size_t _regex_std(const char *target, const utils::meta::area &search, size_t mo
 				if (s.top()){
 					if (!b.len){
 						if (more <= ret + lb + s.top())
-							return (ret + lb + s.top());						
+							r.push_back(ret + lb + s.top());						
 					}else{
 						l = _regex_std(target + ret + lb + s.top(), b, more > ret + lb + s.top() ? more - ret - lb - s.top() : 0);
 						if (l)
-							return (ret + lb + s.top() + l);						
+							r.push_back(ret + lb + s.top() + l);						
 					}
 				}
 				if (s.top() && memchr("*+", c, 2)){
@@ -89,11 +90,20 @@ size_t _regex_std(const char *target, const utils::meta::area &search, size_t mo
 				else if (!s.top()){
 					s.pop();
 					if (!s.size())
-						return (0);
+						break;
 					lb -= s.top();
 				}
 			} while (true);
+			break;
 		}
+		if (!r.size())
+			return (0);
+		ret = *r.begin();
+		for (std::vector<size_t>::iterator i = r.begin(); i != r.end(); i++){
+			if (*i < ret)
+				ret = *i;
+		}
+		return (ret);
 	}else if (memchr("?*+", c, 3)){
 		size_t l = 0;
 		switch (c)

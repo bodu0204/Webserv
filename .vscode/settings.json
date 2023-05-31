@@ -67,6 +67,7 @@
 		"set": "cpp",
 		"functional": "cpp",
 		"unistd.h": "c",
-		"stack": "cpp"
+		"stack": "cpp",
+		"deque": "cpp"
 	}
 }
