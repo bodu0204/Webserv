@@ -32,26 +32,26 @@ const location_conf &server_conf::location(std::string src) const{
 }
 
 server_conf::server_conf(std::string src):is_faile(false),_locations(){
-    src = utils::trim_sp(src);
+	src = utils::trim_sp(src);
 	if (!src.length()){this->is_faile = true; return;}
 	std::string server_name;
 	std::string location;
-    while (src.length()){
-	    std::string buf = utils::new_token(src, this->is_faile);
-	    if (this->is_faile) {return ;}
+	while (src.length()){
+		std::string buf = utils::new_token(src, this->is_faile);
+		if (this->is_faile) {return ;}
 		if (!buf.length() && !src.length()){break;}
-        if(buf == "location"){
-            std::string pattern = utils::new_token(src, this->is_faile);
+		if(buf == "location"){
+			std::string pattern = utils::new_token(src, this->is_faile);
 			if (this->is_faile) {return ;}
 			if (this->_locations.find(pattern) == this->_locations.end()) {this->is_faile = true; return;}
-            std::string value = utils::new_token(src, this->is_faile, true);
+			std::string value = utils::new_token(src, this->is_faile, true);
 			if (this->is_faile) {return ;}
 			location_conf lf(value);
 			if (lf.faile()) {this->is_faile = true; return;}
 			this->_locations.insert(std::pair<std::string, location_conf>(pattern, lf));
-        }else{
-            this->is_faile = true; return ;}
-    }
+		}else{
+			this->is_faile = true; return ;}
+	}
 	if (!this->_locations.size()) {this->is_faile = true; return;}
-    return ;
+	return ;
 }
