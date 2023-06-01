@@ -83,7 +83,6 @@ port_conf::port_conf(std::string src):is_faile(false), _port(0), _proto(undfind_
 	server_conf sc(location);
 	if (sc.faile()){this->is_faile = true; return;}
 	this->_servers.insert(std::pair<std::string, server_conf>(server_name, sc));
-	//this->_servers[server_name] = sc;
     return ;
 }
 

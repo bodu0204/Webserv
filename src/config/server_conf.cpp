@@ -1,4 +1,5 @@
 #include "server_conf.hpp"
+#include "../utils/utils.hpp"
 
 const server_conf server_conf::error;
 
@@ -17,11 +18,10 @@ server_conf::~server_conf(){this->_locations.clear();}
 bool server_conf::faile() const{return (this->is_faile);}
 
 const location_conf &server_conf::location(std::string src) const{
-	printf("[(%s/%d) %s ]%s\n", __FILE__, __LINE__, __func__, ((char *)"NOT_MAKE")); fflush(stdin);
 	std::map<std::string,location_conf>::const_iterator loc = this->_locations.end();
 	size_t len = 0;
 		for (std::map<std::string,location_conf>::const_iterator i = this->_locations.begin();i != this->_locations.end(); i++){
-		if (false/* i->first のパターンがマッチ*/ && i->first.length() > len){
+		if (i->first.length() > len && src.substr(0, i->first.length()) == i->first){
 			loc = i;
 			len = i->first.length();
 		}
@@ -31,7 +31,27 @@ const location_conf &server_conf::location(std::string src) const{
 	return (loc->second);
 }
 
-server_conf::server_conf(std::string str):is_faile(false),_locations(){
-	(void)str;
-	printf("[(%s/%d) %s ]%s\n", __FILE__, __LINE__, __func__, ((char *)"NOT_MAKE")); fflush(stdin);
+server_conf::server_conf(std::string src):is_faile(false),_locations(){
+    src = utils::trim_sp(src);
+	if (!src.length()){this->is_faile = true; return;}
+	std::string server_name;
+	std::string location;
+    while (src.length()){
+	    std::string buf = utils::new_token(src, this->is_faile);
+	    if (this->is_faile) {return ;}
+		if (!buf.length() && !src.length()){break;}
+        if(buf == "location"){
+            std::string pattern = utils::new_token(src, this->is_faile);
+			if (this->is_faile) {return ;}
+			if (this->_locations.find(pattern) == this->_locations.end()) {this->is_faile = true; return;}
+            std::string value = utils::new_token(src, this->is_faile, true);
+			if (this->is_faile) {return ;}
+			location_conf lf(value);
+			if (lf.faile()) {this->is_faile = true; return;}
+			this->_locations.insert(std::pair<std::string, location_conf>(pattern, lf));
+        }else{
+            this->is_faile = true; return ;}
+    }
+	if (!this->_locations.size()) {this->is_faile = true; return;}
+    return ;
 }
