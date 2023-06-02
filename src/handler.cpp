@@ -37,6 +37,11 @@ std::set<handler *> handler::get_del_handler(){
 }
 
 void handler::action(short event){
+	if (event & ~this->events){
+		this->set_del(this->all_child());
+		this->set_del(this);
+		return ;
+	}
 	this->_limit = this->_life==LONG_MAX ? this->_life : time(NULL) + this->_life;
 	this->_action(event);
 	return ;

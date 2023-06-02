@@ -15,11 +15,6 @@ handler(NULL, descriptor, POLL_IN), _conf(conf){}
 accept_handler::~accept_handler(){}
 
 void accept_handler::_action(short event){
-	if (event & ~this->events){
-		this->set_del(this->all_child());
-		this->set_del(this);
-		return ;
-	}
 	struct sockaddr_in addr = {0};
 	socklen_t addrlen = sizeof(addr);
 	int desc = accept(this->descriptor, (struct sockaddr *)&addr, &addrlen);

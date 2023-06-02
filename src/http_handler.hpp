@@ -3,21 +3,30 @@
 #include "handler.hpp"
 #include "cgir_handler.hpp"
 #include "cgiw_handler.hpp"
+#include "config/port_conf.hpp"
+#include <map>
 
-class echo_handler: public handler
+class http_handler: public handler
 {
 private:
-	std::string _res_buff;
+	const port_conf &_conf;
+	std::string _req_buff;
+	std::map<std::string,std::string> _req;
+	pid_t _cgi_pid;
 	cgiw_handler *_cgi_w;
 	cgir_handler *_cgi_r;
-	pid_t _cgi_pid;
+	std::map<std::string,std::string> _res;
+	std::string _res_buff;
 	void _action(short);
 	void callback_end(handler *);
 	void callback(std::string);
-	echo_handler();//not use
-	echo_handler(const echo_handler&);//not use
-	const echo_handler &operator=(const echo_handler&);//not use
+	void exec();
+	void _to_req();
+	void _to_res(std::string);
+	http_handler();//not use
+	http_handler(const http_handler&);//not use
+	const http_handler &operator=(const http_handler&);//not use
 public:
-	echo_handler(handler*, int);
-	~echo_handler();
+	http_handler(handler*, int, const port_conf &);
+	~http_handler();
 };

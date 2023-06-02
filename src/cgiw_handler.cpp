@@ -7,12 +7,7 @@
 #include "debug.h"
 
 void cgiw_handler::_action(short event){
-	if (event & ~this->events){
-		this->set_del(this->all_child());
-		this->set_del(this);
-		return ;
-	}
-	if (/* event & POLL_OUT &&  */this->buf.length())
+	if (this->buf.length())
 	{
 		ssize_t r = write(this->descriptor, this->buf.c_str(), this->buf.length());
 		if (r < 0){
