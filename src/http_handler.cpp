@@ -91,12 +91,14 @@ void http_handler::exec_CGI(const location_conf &lc){
 		env.push_back(strdup(("CONTENT_LENGTH=" + length).c_str()));
 		env.push_back(strdup(("CONTENT_TYPE=" + this->_req["content-type"]).c_str()));
 	}
+	else
+		this->_req[KEY_BODY] = std::string();
 	this->_req.erase("content-length");
 	this->_req.erase("transfer-encoding");
 	this->_req.erase("content-type");
 	env.push_back(strdup("GATEWAY_INTERFACE=CGI/1.1"));
 	//KEY_TARGETに関する処理
-	
+
 }
 
 void http_handler::exec_std(const location_conf &lc){
