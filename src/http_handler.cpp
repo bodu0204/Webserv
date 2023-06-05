@@ -1,4 +1,7 @@
 #include "http_handler.hpp"
+#include "utils/utils.hpp"
+#include <vector>
+#include <sstream>
 #include <poll.h>
 #include <signal.h>
 #include <sys/wait.h>
@@ -49,8 +52,56 @@ void http_handler::callback_end(handler *target){
 
 void http_handler::callback(std::string str){}
 
-void http_handler::exec(){}
+void http_handler::exec(){
+	const server_conf &sc = this->_conf.server(this->_req.at("server"));
+	if (sc.faile()){
+		if (this->_req.at("server") == "teapot" && this->_req.at(KEY_TARGET) == "/coffee")
+			this->I_m_a_teapot();
+		else
+			this->Bad_Request();
+		return ;
+	}
+	const location_conf &lc =sc.location(this->_req.at(KEY_TARGET));
+	if (lc.faile() || this->_req[KEY_TARGET].find("/..") != UINT64_MAX)
+		this->Not_Found();
+	if (lc.cgi().length())
+		this->exec_CGI(lc);
+	else
+		this->exec_std(lc);
+	return ;
+}
 
+void http_handler::exec_CGI(const location_conf &lc){
+	std::vector<char*>env;
+	if (this->_req.find("authorization") != this->_req.end()){
+		std::string authorization;
+		authorization.swap(this->_req["authorization"]);
+		size_t i = 0;
+		for (; authorization[i] && authorization[i] != ' ' && authorization[i] != '\t';i++);
+		env.push_back(strdup(("AUTH_TYPE=" + authorization.substr(0,i)).c_str()));
+		for (; authorization[i] && authorization[i] == ' ' && authorization[i] == '\t';i++);
+		env.push_back(strdup(("REMOTE_USER=" + authorization.substr(i,authorization.length())).c_str()));
+	}
+	this->_req.erase("authorization");
+	if (this->_req[KEY_METHOD] == "POST" || (this->_req[KEY_METHOD] == "DELETE" && (this->_req.find("content-length") != this->_req.end() || this->_req["transfer-encoding"] == "chunked"))){
+		std::stringstream ss;
+		ss << this->_req[KEY_BODY].length();
+		std::string length;
+		ss >> length;
+		env.push_back(strdup(("CONTENT_LENGTH=" + length).c_str()));
+		env.push_back(strdup(("CONTENT_TYPE=" + this->_req["content-type"]).c_str()));
+	}
+	this->_req.erase("content-length");
+	this->_req.erase("transfer-encoding");
+	this->_req.erase("content-type");
+	env.push_back(strdup("GATEWAY_INTERFACE=CGI/1.1"));
+	//KEY_TARGETに関する処理
+	
+}
+
+void http_handler::exec_std(const location_conf &lc){
+
+}
 
 void http_handler::_to_req(){
 	if (this->_req.find(KEY_BODY) == this->_req.end()){
@@ -86,7 +137,15 @@ void http_handler::_to_req(){
 			e++;
 		}
 	}
-	//body
+	if (this->_req.find(KEY_BODY) != this->_req.end()){
+		//
+		std::string method = this->_req[KEY_METHOD];
+		if (method == "GET" || method == "HEAD" \
+		|| (method == "DELETE" && this->_body < 0) \
+		|| (method == "POST" && this->_body < 0))
+			this->exec();
+	}
+	return ;
 }
 
 ssize_t http_handler::write(const std::string &target){
@@ -104,13 +163,14 @@ ssize_t http_handler::read(std::string &target){
 }
 
 http_handler::http_handler(handler *parent, int descriptor, const port_conf &conf, struct sockaddr_in info):\
-	handler(parent, descriptor, POLL_IN|POLL_OUT, 40),_conf(conf),_req_buff(),_req(),_cgi_pid(0),_cgi_w(),_cgi_r(),_res(),_res_buff(),_info(info){}
+	handler(parent, descriptor, POLL_IN|POLL_OUT, 40),_conf(conf),_req_buff(),_req(),_cgi_pid(0),_cgi_w(),_cgi_r(),_res(),_res_buff(),_info(info),_body(-1){}
 
 http_handler::~http_handler(){}
 
 void http_handler::Bad_Request(){
 	bool do_it = !this->_res_buff.length();
-	this->_res_buff += RES_400;
+	this->_res_buff += STATUS_400;
+	this->_res_buff += CRLF;
 	this->_req_buff.clear();
 	this->_req.clear();
 	if (do_it)
@@ -118,8 +178,33 @@ void http_handler::Bad_Request(){
 	return ;
 }
 
-http_handler::http_handler():handler(NULL, 0, 0),_conf(port_conf::error),_req_buff(),_req(),_cgi_pid(0),_cgi_w(),_cgi_r(),_res(),_res_buff(),_info(){}//not use
-http_handler::http_handler(const http_handler&):handler(NULL, 0, 0),_conf(port_conf::error),_req_buff(),_req(),_cgi_pid(0),_cgi_w(),_cgi_r(),_res(),_res_buff(),_info(){}//not use
+void http_handler::Not_Found(){
+	bool do_it = !this->_res_buff.length();
+	this->_res_buff += STATUS_404;
+	this->_res_buff += CRLF;
+	this->_res_buff += "Server: " + this->_res.at("server") + CRLF;
+	this->_res_buff += CONNECTION_KEEP_ALIVE;
+	this->_res_buff += CRLF;
+	this->_req.clear();
+	if (do_it)
+		this->_action(POLL_OUT);
+	return ;
+}
+
+void http_handler::I_m_a_teapot(){
+	bool do_it = !this->_res_buff.length();
+	this->_res_buff += STATUS_418;
+	this->_res_buff += SERVER_TEAPOT;
+	this->_res_buff += CONNECTION_KEEP_ALIVE;
+	this->_res_buff += CRLF;
+	this->_req.clear();
+	if (do_it)
+		this->_action(POLL_OUT);
+	return ;
+}
+
+http_handler::http_handler():handler(NULL, 0, 0),_conf(port_conf::error),_req_buff(),_req(),_cgi_pid(0),_cgi_w(),_cgi_r(),_res(),_res_buff(),_info(),_body(-1){}//not use
+http_handler::http_handler(const http_handler&):handler(NULL, 0, 0),_conf(port_conf::error),_req_buff(),_req(),_cgi_pid(0),_cgi_w(),_cgi_r(),_res(),_res_buff(),_info(),_body(-1){}//not use
 const http_handler &http_handler::operator=(const http_handler&){return (*this);}//not use
 
 
