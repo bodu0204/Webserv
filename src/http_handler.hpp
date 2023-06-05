@@ -36,10 +36,9 @@ private:
 	http_handler();//not use
 	http_handler(const http_handler&);//not use
 	const http_handler &operator=(const http_handler&);//not use
-static std::string to_meta_var(const std::string &);
 public:
 	http_handler(handler*, int, const port_conf &, struct sockaddr_in);
-	~http_handler();
+	virtual ~http_handler();
 };
 
 #define KEY_BODY ":body"
@@ -57,6 +56,6 @@ public:
 #define STATUS_501 "HTTP/1.1 501 Not Implemented\r\n"
 
 #define CRLF "\r\n"
-
+#define F_NAME_ABLE "!#$%&'*+-.^_`|~"
 #define SERVER_TEAPOT "Server: teapot\r\n"
 #define CONNECTION_KEEP_ALIVE "Connection: keep-alive\r\n"
