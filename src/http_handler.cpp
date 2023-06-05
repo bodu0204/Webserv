@@ -62,8 +62,16 @@ void http_handler::exec(){
 		return ;
 	}
 	const location_conf &lc =sc.location(this->_req.at(KEY_TARGET));
-	if (lc.faile() || this->_req[KEY_TARGET].find("/..") != UINT64_MAX)
-		this->Not_Found();
+	if (lc.faile() || this->_req[KEY_TARGET].find("/..") != UINT64_MAX){
+		this->Not_Found(); return ;
+	}
+	if (this->_req[KEY_TARGET] != "GET" \
+		&& this->_req[KEY_TARGET] != "POST" \
+		&& this->_req[KEY_TARGET] != "PUT" \
+		&& this->_req[KEY_TARGET] != "DELETE" \
+		&& this->_req[KEY_TARGET] != "HEAD"){
+		this->Not_Implemented(); return ;
+	}
 	if (lc.cgi().length())
 		this->exec_CGI(lc);
 	else
@@ -97,7 +105,31 @@ void http_handler::exec_CGI(const location_conf &lc){
 	this->_req.erase("transfer-encoding");
 	this->_req.erase("content-type");
 	env.push_back(strdup("GATEWAY_INTERFACE=CGI/1.1"));
-	//KEY_TARGETに関する処理
+	//KEY_TARGETに関する処理 PATH_INFO, PATH_TRANSLATED, SCRIPT_NAME, QUERY_STRING
+	{
+		unsigned addr = ntohl(this->_info.sin_addr.s_addr);
+		std::stringstream ss;
+		ss << ((addr & 0xff000000) >> 24) << "." << ((addr & 0xff0000) >> 16) << "." << ((addr & 0xff00) >> 8) << "." << (addr & 0xff);
+		env.push_back(strdup(("REMOTE_ADDR=" + ss.str()).c_str()));
+	}
+	if (this->_req.find("user-agent") != this->_req.end()){
+		env.push_back(strdup(("REMOTE_IDENT=" + this->_req["user-agent"]).c_str()));
+	}
+	this->_req.erase("user-agent");
+	env.push_back(strdup(("REQUEST_METHOD=" + this->_req[KEY_METHOD]).c_str()));
+	env.push_back(strdup(("SERVER_NAME=" + this->_req["server"]).c_str()));
+	{
+		std::stringstream ss;
+		ss << this->_conf.port();
+		env.push_back(strdup(("SERVER_PORT=" + ss.str()).c_str()));
+	}
+	env.push_back(strdup("SERVER_PROTOCOL=HTTP/1.1"));
+	env.push_back(strdup("SERVER_SOFTWARE=Webserv/1.0"));
+	for (std::map<std::string, std::string>::iterator i = this->_req.begin(); i != this->_req.end(); i++){
+		if(i->first[0] != ':')
+			env.push_back(strdup((http_handler::to_meta_var(i->first) + "=" + i->second).c_str()));
+	}
+
 
 }
 
@@ -209,4 +241,13 @@ http_handler::http_handler():handler(NULL, 0, 0),_conf(port_conf::error),_req_bu
 http_handler::http_handler(const http_handler&):handler(NULL, 0, 0),_conf(port_conf::error),_req_buff(),_req(),_cgi_pid(0),_cgi_w(),_cgi_r(),_res(),_res_buff(),_info(),_body(-1){}//not use
 const http_handler &http_handler::operator=(const http_handler&){return (*this);}//not use
 
+std::string http_handler::to_meta_var(const std::string &src){
+	std::string ret = "HTTP_" + src;
+	for (size_t i = 0; i < ret.length(); i++){
+		if (ret[i] >= 'a' && ret[i] <= 'z')
+			ret[i] += 'A' - 'a';
+		else if (ret[i] == '-')
+			ret[i] = '_';
+	}
+}
 

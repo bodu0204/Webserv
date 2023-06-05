@@ -32,9 +32,11 @@ private:
 	inline void Bad_Request();
 	inline void Not_Found();
 	inline void I_m_a_teapot();
+	inline void Not_Implemented();
 	http_handler();//not use
 	http_handler(const http_handler&);//not use
 	const http_handler &operator=(const http_handler&);//not use
+static std::string to_meta_var(const std::string &);
 public:
 	http_handler(handler*, int, const port_conf &, struct sockaddr_in);
 	~http_handler();
@@ -51,6 +53,8 @@ public:
 #define STATUS_400 "HTTP/1.1 400 Bad Request\r\n"
 #define STATUS_404 "HTTP/1.1 404 Not Found\r\n"
 #define STATUS_418 "HTTP/1.1 418 I'm a teapot\r\n"
+
+#define STATUS_501 "HTTP/1.1 501 Not Implemented\r\n"
 
 #define CRLF "\r\n"
 
