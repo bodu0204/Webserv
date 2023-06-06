@@ -69,9 +69,8 @@ void http_handler::exec(){
 		&& this->_req[KEY_METHOD] != "POST" \
 		&& this->_req[KEY_METHOD] != "PUT" \
 		&& this->_req[KEY_METHOD] != "DELETE" \
-		&& this->_req[KEY_METHOD] != "HEAD"){
-		this->Not_Implemented(); return ;
-	}
+		&& this->_req[KEY_METHOD] != "HEAD")
+		{this->Method_Not_Allowed(); return ;}
 	if (lc.cgi().length())
 		this->exec_CGI(lc);
 	else
@@ -105,7 +104,16 @@ void http_handler::exec_CGI(const location_conf &lc){
 	this->_req.erase("transfer-encoding");
 	this->_req.erase("content-type");
 	env.push_back(strdup("GATEWAY_INTERFACE=CGI/1.1"));
+	{
 //KEY_TARGETに関する処理 PATH_INFO, PATH_TRANSLATED, SCRIPT_NAME, QUERY_STRING
+		std::string buff = this->_req[KEY_TARGET];
+		size_t l = buff.find("?");
+		if (l != UINT64_MAX){
+			env.push_back(strdup(("QUERY_STRING=" + buff.substr(l + 1, buff.length())).c_str()));
+			buff = buff.substr(0, l);
+		}
+		env.push_back(strdup(("SCRIPT_NAME=" + buff).c_str()));
+	}
 	{
 		unsigned addr = ntohl(this->_info.sin_addr.s_addr);
 		std::stringstream ss;
@@ -197,13 +205,9 @@ void http_handler::_to_req(){
 			for (size_t i = 0; i < field_name.length(); i++){
 				if (field_name[i] >= 'A' && field_name[i] <= 'Z')
 					field_name[i] += 'a' - 'A';
-				else if (field_name[i] >= 'a' && field_name[i] <= 'z')
-				{}
-				else if (field_name[i] >= '0' && field_name[i] <= '9')
-				{}
-				else if (memchr(F_NAME_ABLE,field_name[i],strlen(F_NAME_ABLE)))
-				{}
-				else
+				else if (!(field_name[i] >= 'a' && field_name[i] <= 'z') \
+					&& !(field_name[i] >= '0' && field_name[i] <= '9') \
+					&& !memchr(F_NAME_ABLE,field_name[i],strlen(F_NAME_ABLE)))
 				{this->Bad_Request(); return;}
 			}
 			s = e + 1;
@@ -245,7 +249,22 @@ void http_handler::_to_req(){
 	}
 	if (this->_req.find(KEY_BODY) != this->_req.end()){
 		if (this->_body < 0){
-			//エラー処理
+			if (this->_req.find("transfer-encoding") != this->_req.end()){
+				if(this->_req["transfer-encoding"] != "chunked")
+					{this->Not_Acceptable(); return;}
+				else
+					this->_body = 0;
+			}
+			if (this->_req.find("content-length") != this->_req.end()){
+				if (!utils::is_numstring(this->_req["content-length"].c_str())){this->Bad_Request(); return;}
+				if (this->_req.find("transfer-encoding") != this->_req.end())
+					this->_req.erase("content-length");
+				else
+					this->_body = atoi(this->_req["content-length"].c_str());
+			}
+			if ((this->_req[KEY_METHOD] == "POST" || this->_req[KEY_METHOD] == "PUT") \
+				&& this->_body < 0)
+				{this->Length_Required(); return;}
 		}
 		//bodyのパース
 		if (this->_body < 0)
