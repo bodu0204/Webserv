@@ -12,9 +12,10 @@ public:
 	server_conf(std::string);
 	server_conf(const server_conf &);
 	const server_conf &operator=(const server_conf &);
-	const location_conf &location(std::string) const;
+	const location_conf &location(std::string, std::string &pattern = server_conf::buff) const;
 	bool faile() const;
 	~server_conf();
 
 	static const server_conf error;
+	static std::string buff;
 };

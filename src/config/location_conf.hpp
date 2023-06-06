@@ -74,7 +74,6 @@ public:
 #define AUTO_INDEX_FMT_2 "</h1>\n\
     <hr>\n\
     <pre>\n\
-    <a href=\"../\">../</a>\n\
     "
 #define AUTO_INDEX_FMT_3 "<a href=\""
 #define AUTO_INDEX_FMT_4 "\">"

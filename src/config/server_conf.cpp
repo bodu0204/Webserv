@@ -2,6 +2,7 @@
 #include "../utils/utils.hpp"
 
 const server_conf server_conf::error;
+std::string server_conf::buff;
 
 server_conf::server_conf():is_faile(true),_locations(){}
 
@@ -17,7 +18,7 @@ server_conf::~server_conf(){this->_locations.clear();}
 
 bool server_conf::faile() const{return (this->is_faile);}
 
-const location_conf &server_conf::location(std::string src) const{
+const location_conf &server_conf::location(std::string src, std::string &pattern) const{
 	std::map<std::string,location_conf>::const_iterator loc = this->_locations.end();
 	size_t len = 0;
 		for (std::map<std::string,location_conf>::const_iterator i = this->_locations.begin();i != this->_locations.end(); i++){
@@ -28,6 +29,7 @@ const location_conf &server_conf::location(std::string src) const{
 	}
 	if (loc == this->_locations.end())
 		return (location_conf::error);
+	pattern = loc->first;
 	return (loc->second);
 }
 

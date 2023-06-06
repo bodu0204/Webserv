@@ -6,12 +6,17 @@
 #include <signal.h>
 #include <sys/wait.h>
 #include <sys/socket.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <dirent.h>
+#include <unistd.h>
+
 #define BUFFERSIZE 1024
 
 void http_handler::_action(short event){
 	if (event & POLL_IN){
 		std::string buff;
-		ssize_t r = this->read(buff);
+		ssize_t r = this->_read(buff);
 		if (r < 0){
 			this->set_del(this->all_child());
 			this->set_del(this);
@@ -23,7 +28,7 @@ void http_handler::_action(short event){
 		}
 	}
 	if (event & POLL_OUT && this->_res_buff.length()){
-		ssize_t r = this->write(this->_res_buff);
+		ssize_t r = this->_write(this->_res_buff);
 		if (r < 0){
 			this->set_del(this->all_child());
 			this->set_del(this);
@@ -61,10 +66,13 @@ void http_handler::exec(){
 			this->Bad_Request();
 		return ;
 	}
-	const location_conf &lc =sc.location(this->_req.at(KEY_TARGET));
+	std::string pattern;
+	const location_conf &lc =sc.location(this->_req.at(KEY_TARGET), pattern);
 	if (lc.faile() || this->_req[KEY_TARGET].find("/..") != UINT64_MAX){
 		this->Not_Found(); return ;
 	}
+	if (this->_req[KEY_TARGET] == pattern)
+		this->_req[KEY_TARGET] += "/" + lc.index();
 	if (this->_req[KEY_METHOD] != "GET" \
 		&& this->_req[KEY_METHOD] != "POST" \
 		&& this->_req[KEY_METHOD] != "PUT" \
@@ -105,7 +113,6 @@ void http_handler::exec_CGI(const location_conf &lc){
 	this->_req.erase("content-type");
 	env.push_back(strdup("GATEWAY_INTERFACE=CGI/1.1"));
 	{
-//KEY_TARGETに関する処理 PATH_INFO, PATH_TRANSLATED, SCRIPT_NAME, QUERY_STRING
 		std::string buff = this->_req[KEY_TARGET];
 		size_t l = buff.find("?");
 		if (l != UINT64_MAX){
@@ -145,10 +152,125 @@ void http_handler::exec_CGI(const location_conf &lc){
 			env.push_back(strdup(("HTTP_" + meta + "=" + i->second).c_str()));
 		}
 	}
+	int fds[2];
+	pipe(fds);
+	this->_cgi_pid = fork();
+	if(!this->_cgi_pid){
+		dup2(fds[STDIN_FILENO], STDIN_FILENO);
+		dup2(fds[STDOUT_FILENO], STDOUT_FILENO);
+		close(fds[0]);
+		close(fds[1]);
+		char *args[2];
+		args[0] = strdup(lc.cgi().c_str());
+		args[1] = NULL;
+		execve(args[0], args, env.data());
+		this->Internal_Server_Error();
+		return ;
+	}
+	for (std::vector<char *>::iterator i = env.begin(); i != env.end(); i++){
+		free(*i);
+	}
+	if (this->_cgi_pid < 0){
+		close(fds[0]);
+		close(fds[1]);
+		this->_cgi_pid = 0;
+		return ;
+	}
+	this->_cgi_r = new cgir_handler(this, fds[0]);
+	this->_cgi_w = new cgiw_handler(this, fds[1]);
+	this->set_add(this->_cgi_r);
+	this->set_add(this->_cgi_w);
+	this->_cgi_w->set_write(this->_req[KEY_BODY]);
 }
 
 void http_handler::exec_std(const location_conf &lc){
+	this->_req["Server"] = this->_res.at("server");
+	this->_req["Connection"] = "keep-alive";
+	if (this->_req[KEY_METHOD] == "PUT"){
+		this->_res[KEY_STATUS] = "201 Created";
+		this->_res["Content-Location"] = this->_req[KEY_TARGET];
+		unlink((lc.root() + this->_req[KEY_TARGET]).c_str());
+		int fd = open((lc.root() + this->_req[KEY_TARGET]).c_str(), O_WRONLY | O_CREAT, S_IREAD | S_IWRITE);
+		if (fd < 0)
+			{this->Not_Found(); return ;}
+		if(write(fd, this->_req[KEY_BODY].c_str(),this->_req[KEY_BODY].length()) < this->_req[KEY_BODY].length())
+			{unlink((lc.root() + this->_req[KEY_TARGET]).c_str()); this->Internal_Server_Error(); return ;}
+	}else{
+	struct stat sb;
+	if (stat((lc.root() + this->_req[KEY_TARGET]).c_str(), &sb) < 0)
+		{this->Not_Found(); return ;}
+	if (this->_req[KEY_METHOD] == "GET" || this->_req[KEY_METHOD] == "HEAD"){
+		this->_res[KEY_STATUS] = "200 OK";
+		if (sb.st_mode == S_IFDIR && lc.autoindex()){
+			this->_res["Content-Type"] = "text/html";
+			if (this->_req[KEY_METHOD] == "GET"){
+				DIR *dir;
+				struct dirent *dent;
+				dir = opendir((lc.root() + this->_req[KEY_TARGET]).c_str());
+				if (dir == NULL)
+					{this->Internal_Server_Error(); return ;}
+				this->_res[KEY_BODY] = AUTO_INDEX_FMT_0 + this->_req[KEY_TARGET] + AUTO_INDEX_FMT_1 \
+					+ this->_req[KEY_TARGET] + AUTO_INDEX_FMT_2;
+				while ((dent = readdir(dir)) != NULL) {
+					std::string name = dent->d_name;
+					if (name == ".")
+						continue;
+					if (dent->d_type == DT_DIR)
+						name += "/";
+					this->_res[KEY_BODY] += AUTO_INDEX_FMT_3 + name + AUTO_INDEX_FMT_4 + name + AUTO_INDEX_FMT_5;
+				}
+				this->_res[KEY_BODY] += AUTO_INDEX_FMT_6;
+				closedir(dir);
+				{
+					std::stringstream ss;
+					ss<<this->_res[KEY_BODY].length();
+					this->_res["Content-Length"] = ss.str();
+				}
+			}
+		}else if(sb.st_mode == S_IFCHR){
+			{
+				size_t m = this->_req[KEY_TARGET].rfind(".");
+				if (m == UINT64_MAX)
+					{m = this->_req[KEY_TARGET].length();}
+				else
+					m++;
+				std::map<std::string,std::string>::const_iterator mi = http_handler::mime.find(this->_req[KEY_TARGET].substr(m,this->_req[KEY_TARGET].length()));
+				if (mi != http_handler::mime.end())
+					this->_res["Content-Type"] = mi->second;
+			}
+			{
+				std::stringstream ss;
+				ss<<static_cast<long>(sb.st_size);
+				this->_res["Content-Length"] = ss.str();
+			}
+			if (this->_req[KEY_METHOD] == "GET"){
+				int fd = open((lc.root() + this->_req[KEY_TARGET]).c_str(), O_RDONLY);
+				if (fd < 0)
+					{this->Internal_Server_Error(); return ;}
+				char buff[BUFFERSIZE + 1];
+				ssize_t r = 1;
+				while (r){
+					r = read(fd, buff, BUFFERSIZE);
+					if (fd < 0)
+						{this->Internal_Server_Error(); return ;}
+					buff[r] = '\0';
+					this->_res[KEY_BODY] += buff;
 
+				}
+				close(fd);
+			}
+		}else
+			{this->Not_Found(); return ;}
+	}else if (this->_req[KEY_METHOD] == "DELETE"){
+		this->_res[KEY_STATUS] = "200 OK";
+		if(sb.st_mode == S_IFDIR || sb.st_mode == S_IFCHR){
+			if (unlink((lc.root() + this->_req[KEY_TARGET]).c_str()) < 0)
+				{this->Internal_Server_Error(); return ;}
+		}else
+			{this->Not_Found(); return ;}
+	}else
+		{this->Method_Not_Allowed(); return ;}}
+	
 }
 
 void http_handler::_to_req(){
@@ -273,11 +395,11 @@ void http_handler::_to_req(){
 	return ;
 }
 
-ssize_t http_handler::write(const std::string &target){
+ssize_t http_handler::_write(const std::string &target){
 	return (send(this->descriptor, target.c_str(), target.length(), 0));
 }
 
-ssize_t http_handler::read(std::string &target){
+ssize_t http_handler::_read(std::string &target){
 	char buff[BUFFERSIZE + 1];
 	ssize_t r = recv(this->descriptor, buff, BUFFERSIZE, 0);
 	if (r >= 0){
@@ -298,6 +420,7 @@ void http_handler::Bad_Request(){
 	this->_res_buff += CRLF;
 	this->_req_buff.clear();
 	this->_req.clear();
+	this->_res.clear();
 	if (do_it)
 		this->_action(POLL_OUT);
 	return ;
@@ -311,6 +434,7 @@ void http_handler::Not_Found(){
 	this->_res_buff += CONNECTION_KEEP_ALIVE;
 	this->_res_buff += CRLF;
 	this->_req.clear();
+	this->_res.clear();
 	if (do_it)
 		this->_action(POLL_OUT);
 	return ;
@@ -323,6 +447,7 @@ void http_handler::I_m_a_teapot(){
 	this->_res_buff += CONNECTION_KEEP_ALIVE;
 	this->_res_buff += CRLF;
 	this->_req.clear();
+	this->_res.clear();
 	if (do_it)
 		this->_action(POLL_OUT);
 	return ;

@@ -27,8 +27,8 @@ private:
 	void exec_CGI(const location_conf &);
 	void exec_std(const location_conf &);
 	void _to_req();
-	virtual ssize_t write(const std::string &);
-	virtual ssize_t read(std::string &);
+	virtual ssize_t _write(const std::string &);
+	virtual ssize_t _read(std::string &);
 	inline void Bad_Request();
 	inline void Not_Found();
 	inline void Method_Not_Allowed();
@@ -36,6 +36,7 @@ private:
 	inline void Length_Required();
 	inline void I_m_a_teapot();
 
+	inline void Internal_Server_Error();
 	inline void Not_Implemented();//不要？
 	http_handler();//not use
 	http_handler(const http_handler&);//not use
@@ -43,6 +44,7 @@ private:
 public:
 	http_handler(handler*, int, const port_conf &, struct sockaddr_in);
 	virtual ~http_handler();
+static const std::map<std::string, std::string>mime;
 };
 
 #define KEY_BODY ":body"
@@ -50,6 +52,7 @@ public:
 #define KEY_TARGET ":target"
 #define KEY_VERSION ":version"
 #define KEY_CGIBUFF ":CGIbuff"
+#define KEY_STATUS ":status"
 
 #define STATUS_200 "HTTP/1.1 200 OK\r\n"
 
@@ -60,6 +63,7 @@ public:
 #define STATUS_411 "HTTP/1.1 411 Length Required\r\n"
 #define STATUS_418 "HTTP/1.1 418 I'm a teapot\r\n"
 
+#define STATUS_500 "HTTP/1.1 500 Internal Server Error\r\n"
 #define STATUS_501 "HTTP/1.1 501 Not Implemented\r\n"
 
 #define CRLF "\r\n"
