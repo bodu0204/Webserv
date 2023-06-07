@@ -47,18 +47,16 @@ void echo_handler::_action(short event){
 			return ;
 		}
 		buff[r] = '\0';
-//Ts(buff)
 		this->_cgi_w->set_write(buff);
 	}
 	if (event & POLL_OUT && this->_res_buff.length()){
-//Ts(this->_res_buff.c_str())
 		ssize_t r = send(this->descriptor, this->_res_buff.c_str(), this->_res_buff.length(), 0);
 		if (r < 0){
 			this->set_del(this->all_child());
 			this->set_del(this);
 			return ;
 		}
-		this->_res_buff = this->_res_buff.substr(r, this->_res_buff.length() - r);
+		this->_res_buff = this->_res_buff.substr(r);
 	}
 	return ;
 }

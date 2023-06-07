@@ -22,6 +22,7 @@ void http_handler::_action(short event){
 			this->set_del(this);
 			return ;
 		}
+Ts(buff.c_str())
 		this->_req_buff += buff;
 		if (!this->_cgi_pid){
 			this->_to_req();
@@ -34,7 +35,7 @@ void http_handler::_action(short event){
 			this->set_del(this);
 			return ;
 		}
-		this->_res_buff = this->_res_buff.substr(r, this->_res_buff.length() - r);
+		this->_res_buff = this->_res_buff.substr(r);
 	}
 	return ;
 }
@@ -84,11 +85,11 @@ void http_handler::callback(std::string str){
 			else
 				l += 2;
 			std::string h = str.substr(0,l);
-			str = str.substr(l, str.length());
+			str = str.substr(l);
 			if (h == CRLF || h == "\n")
 				{this->_res[KEY_CGIBODY] = str; return;}
 			else if (!memcmp(h.c_str(), "Status:", 7))
-				this->_res[KEY_STATUS] = h.substr(7, h.length());
+				this->_res[KEY_STATUS] = h.substr(7);
 			else
 				this->_res[KEY_CGIHEAD] += h;
 		}
@@ -98,9 +99,10 @@ void http_handler::callback(std::string str){
 }
 
 void http_handler::exec(){
-	const server_conf &sc = this->_conf.server(this->_req.at("server"));
+T
+	const server_conf &sc = this->_conf.server(this->_req["host"]);
 	if (sc.faile()){
-		if (this->_req.at("server") == "teapot" && this->_req.at(KEY_TARGET) == "/coffee")
+		if (this->_req.at("host") == "teapot" && this->_req.at(KEY_TARGET) == "/coffee")
 			this->I_m_a_teapot();
 		else
 			this->Bad_Request();
@@ -112,7 +114,7 @@ void http_handler::exec(){
 		this->Not_Found(); return ;
 	}
 	if (this->_req[KEY_TARGET] == pattern)
-		this->_req[KEY_TARGET] += "/" + lc.index();
+		this->_req[KEY_TARGET] += lc.index();
 	if (this->_req[KEY_METHOD] != "GET" \
 		&& this->_req[KEY_METHOD] != "POST" \
 		&& this->_req[KEY_METHOD] != "PUT" \
@@ -135,7 +137,7 @@ void http_handler::exec_CGI(const location_conf &lc){
 		for (; authorization[i] && authorization[i] != ' ' && authorization[i] != '\t';i++);
 		env.push_back(strdup(("AUTH_TYPE=" + authorization.substr(0,i)).c_str()));
 		for (; authorization[i] && authorization[i] == ' ' && authorization[i] == '\t';i++);
-		env.push_back(strdup(("REMOTE_USER=" + authorization.substr(i,authorization.length())).c_str()));
+		env.push_back(strdup(("REMOTE_USER=" + authorization.substr(i)).c_str()));
 	}
 	this->_req.erase("authorization");
 	if (this->_req[KEY_METHOD] == "POST" || (this->_req[KEY_METHOD] == "DELETE" && (this->_req.find("content-length") != this->_req.end() || this->_req["transfer-encoding"] == "chunked"))){
@@ -156,7 +158,7 @@ void http_handler::exec_CGI(const location_conf &lc){
 		std::string buff = this->_req[KEY_TARGET];
 		size_t l = buff.find("?");
 		if (l != UINT64_MAX){
-			env.push_back(strdup(("QUERY_STRING=" + buff.substr(l + 1, buff.length())).c_str()));
+			env.push_back(strdup(("QUERY_STRING=" + buff.substr(l + 1)).c_str()));
 			buff = buff.substr(0, l);
 		}
 		env.push_back(strdup(("SCRIPT_NAME=" + buff).c_str()));
@@ -225,8 +227,8 @@ void http_handler::exec_CGI(const location_conf &lc){
 }
 
 void http_handler::exec_std(const location_conf &lc){
-	this->_req["Server"] = this->_res.at("server");
-	this->_req["Connection"] = "keep-alive";
+	this->_res["host"] = this->_req["host"];
+	this->_res["Connection"] = "keep-alive";
 	if (this->_req[KEY_METHOD] == "PUT"){
 		this->_res[KEY_STATUS] = "201 Created";
 		this->_res["Content-Location"] = this->_req[KEY_TARGET];
@@ -242,7 +244,7 @@ void http_handler::exec_std(const location_conf &lc){
 		{this->Not_Found(); return ;}
 	if (this->_req[KEY_METHOD] == "GET" || this->_req[KEY_METHOD] == "HEAD"){
 		this->_res[KEY_STATUS] = "200 OK";
-		if (sb.st_mode == S_IFDIR && lc.autoindex()){
+		if ((sb.st_mode & S_IFMT) == S_IFDIR && lc.autoindex()){
 			this->_res["Content-Type"] = "text/html";
 			if (this->_req[KEY_METHOD] == "GET"){
 				DIR *dir;
@@ -268,14 +270,14 @@ void http_handler::exec_std(const location_conf &lc){
 					this->_res["Content-Length"] = ss.str();
 				}
 			}
-		}else if(sb.st_mode == S_IFCHR){
+		}else if((sb.st_mode & S_IFMT) == S_IFREG){
 			{
 				size_t m = this->_req[KEY_TARGET].rfind(".");
 				if (m == UINT64_MAX)
 					{m = this->_req[KEY_TARGET].length();}
 				else
 					m++;
-				std::map<std::string,std::string>::const_iterator mi = http_handler::mime.find(this->_req[KEY_TARGET].substr(m,this->_req[KEY_TARGET].length()));
+				std::map<std::string,std::string>::const_iterator mi = http_handler::mime.find(this->_req[KEY_TARGET].substr(m));
 				if (mi != http_handler::mime.end())
 					this->_res["Content-Type"] = mi->second;
 			}
@@ -283,6 +285,7 @@ void http_handler::exec_std(const location_conf &lc){
 				std::stringstream ss;
 				ss<<static_cast<long>(sb.st_size);
 				this->_res["Content-Length"] = ss.str();
+Ts(this->_res["Content-Length"].c_str())
 			}
 			if (this->_req[KEY_METHOD] == "GET"){
 				int fd = open((lc.root() + this->_req[KEY_TARGET]).c_str(), O_RDONLY);
@@ -296,15 +299,15 @@ void http_handler::exec_std(const location_conf &lc){
 						{this->Internal_Server_Error(); return ;}
 					buff[r] = '\0';
 					this->_res[KEY_BODY] += buff;
-
 				}
 				close(fd);
 			}
+Tn(this->_res[KEY_BODY].length())
 		}else
 			{this->Not_Found(); return ;}
 	}else if (this->_req[KEY_METHOD] == "DELETE"){
 		this->_res[KEY_STATUS] = "200 OK";
-		if(sb.st_mode == S_IFDIR || sb.st_mode == S_IFCHR){
+		if((sb.st_mode & S_IFMT) == S_IFDIR || (sb.st_mode & S_IFMT) == S_IFREG){
 			if (unlink((lc.root() + this->_req[KEY_TARGET]).c_str()) < 0)
 				{this->Internal_Server_Error(); return ;}
 		}else
@@ -319,7 +322,7 @@ void http_handler::exec_std(const location_conf &lc){
 	}
 	this->_res_buff += CRLF;
 	if (this->_res[KEY_BODY].length())
-		this->_res_buff = this->_res[KEY_BODY];
+		this->_res_buff += this->_res[KEY_BODY];
 	this->_req.clear();
 	this->_res.clear();
 	if (doit)
@@ -328,6 +331,7 @@ void http_handler::exec_std(const location_conf &lc){
 
 void http_handler::_to_req(){
 	if (this->_req.find(KEY_BODY) == this->_req.end()){
+T
 		size_t crlf = this->_req_buff.find("\n\n");
 		if (crlf != UINT64_MAX)
 			crlf += 1;
@@ -335,7 +339,10 @@ void http_handler::_to_req(){
 			crlf = this->_req_buff.find("\r\n\r\n");
 			if (crlf != UINT64_MAX)
 				crlf += 2;
+			else if (this->_req_buff.find("\n") == 0 || this->_req_buff.find("\r\n") == 0)
+				crlf = 0;
 		}
+T
 		if (crlf != UINT64_MAX){
 			this->_req[KEY_BODY] = std::string();
 		}
@@ -347,32 +354,35 @@ void http_handler::_to_req(){
 				crlf += 1;
 		}
 		std::string header = this->_req_buff.substr(0, crlf);
-		this->_req_buff = this->_req_buff.substr(header.length(), this->_req_buff.length());
+		this->_req_buff = this->_req_buff.substr(header.length());
 		if (this->_req_buff.find("\n") <= 1)
-			this->_req_buff = this->_req_buff.substr(this->_req_buff.find("\n") + 1, this->_req_buff.length());
+			this->_req_buff = this->_req_buff.substr(this->_req_buff.find("\n") + 1);
+		if (this->_req.find(KEY_TARGET) == this->_req.end())
 		{
 			std::string reqline = header.substr(0, header.find("\n") + 1);
-			header = header.substr(reqline.length(), header.length());
+			header = header.substr(reqline.length());
 			if (reqline[0] == ' ' || reqline[0] == '\t') {this->Bad_Request(); return ;}
 			size_t s = 0, e = 0;
 			for (; reqline[e] && reqline[e] != ' '; e++);
-			this->_req[KEY_METHOD] = reqline.substr(s, e);
+			this->_req[KEY_METHOD] = reqline.substr(s, e - s);
 			e++;
+			if (e > reqline.length()){this->Bad_Request(); return ;}
 			s = e;
 			for (; reqline[e] && reqline[e] != ' '; e++);
-			this->_req[KEY_TARGET] = reqline.substr(s, e);
+			this->_req[KEY_TARGET] = reqline.substr(s, e - s);
 			e++;
+			if (e > reqline.length()){this->Bad_Request(); return ;}
 			s = e;
 			for (; reqline[e] && reqline[e] != '\r' && reqline[e] != '\n'; e++);
-			this->_req[KEY_VERSION] = reqline.substr(s, e);
+			this->_req[KEY_VERSION] = reqline.substr(s, e - s);
 			if (!this->_req[KEY_METHOD].length() || !this->_req[KEY_TARGET].length() || !this->_req[KEY_VERSION].length())
 				{this->Bad_Request(); return ;}
 		}
 		while (header.length()){
 			size_t s = 0,e = 0;
-			for (; header[e] != '\n' && header[e + 1] != ' ' && header[e + 1] != '\t' ; e++);
+			for (; header[e] != '\n' || (header[e] == '\n' && (header[e + 1] == ' ' || header[e + 1] == '\t')) ; e++);
 			std::string field = header.substr(0, e + 1);
-			header = header.substr(field.length(), header.length());
+			header = header.substr(field.length());
 			e = field.find(":");
 			if (e == UINT64_MAX){this->Bad_Request(); return;}
 			std::string	field_name = field.substr(0, e);
@@ -387,24 +397,24 @@ void http_handler::_to_req(){
 			}
 			s = e + 1;
 			e = field.length() - 1;
-			if (field[e] == '\r')
+			if (e && field[e - 1] == '\r')
 				e--;
 			for (; s < e && (field[s] == ' ' || field[s] == '\t'); s++);
 			if (s >= e){this->Bad_Request(); return;}
 			for (; field[e] == ' ' || field[e] == '\t'; e--);
-			std::string field_value = field.substr(s, e);
+			std::string field_value = field.substr(s, e - s);
 			std::string p_field_value;
 			for (size_t i = 0; i < field_value.length(); i++)
 			{
 				s = i;
-				if (!isprint(field_value[i]) && !(field_value[i] >= 0x80))
+				if (!isprint(field_value[i]) && !(field_value[i] >= static_cast<char>(0x80)))
 					{this->Bad_Request(); return;}
 				else if (p_field_value.length())
 					p_field_value += " ";
 				i++;
-				for (; i < field_value.length() && (isprint(field_value[i]) || field_value[i] >= 0x80 || field_value[i] == ' ' || field_value[i] == '\t'); i++);
+				for (; i < field_value.length() && (isprint(field_value[i]) || field_value[i] >= static_cast<char>(0x80) || field_value[i] == ' ' || field_value[i] == '\t'); i++);
 				if (field_value[i - 1] == ' ' || field_value[i - 1] == '\t') {this->Bad_Request(); return;}
-				p_field_value += field_value.substr(s, i);
+				p_field_value += field_value.substr(s, i - s);
 				if (i >= field_value.length())
 					break;
 				if (field_value.find('\n', i) <= 0)
@@ -423,6 +433,7 @@ void http_handler::_to_req(){
 		}
 	}
 	if (this->_req.find(KEY_BODY) != this->_req.end()){
+T
 		if (this->_body < 0){
 			if (this->_req.find("transfer-encoding") != this->_req.end()){
 				if(this->_req["transfer-encoding"] != "chunked")
@@ -446,9 +457,9 @@ void http_handler::_to_req(){
 				while (this->_body >= 0){
 					size_t l = this->_body < this->_req_buff.length() ? this->_body : this->_req_buff.length();
 					this->_req[KEY_BODY] += this->_req_buff.substr(0, l);
-					this->_req_buff = this->_req_buff.substr(l, this->_req_buff.length());
+					this->_req_buff = this->_req_buff.substr(l);
 					this->_body -= l;
-					if (!this->_req_buff.length()) 
+					if (!this->_req_buff.length())
 						return;
 					l = this->_req_buff.find("\n");
 					if (l == UINT64_MAX)
@@ -456,7 +467,7 @@ void http_handler::_to_req(){
 					l++;
 					std::stringstream ss;
 					ss << std::hex << this->_req_buff.substr(0, l);
-					this->_req_buff = this->_req_buff.substr(l, this->_req_buff.length());
+					this->_req_buff = this->_req_buff.substr(l);
 					ss >> this->_body;
 					if (this->_body == 0){
 						this->_body = -1;
@@ -466,7 +477,7 @@ void http_handler::_to_req(){
 			else if (this->_req.find("content-length") != this->_req.end()){
 				size_t l = this->_body < this->_req_buff.length() ? this->_body : this->_req_buff.length();
 				this->_req[KEY_BODY] += this->_req_buff.substr(0, l);
-				this->_req_buff = this->_req_buff.substr(l, this->_req_buff.length());
+				this->_req_buff = this->_req_buff.substr(l);
 				this->_body -= l;
 				if (this->_body == 0){
 					this->_body = -1;
@@ -474,7 +485,7 @@ void http_handler::_to_req(){
 			}
 		}
 		if (this->_body < 0)
-			this->exec();
+			{T this->exec();}
 	}
 	return ;
 }
@@ -518,7 +529,7 @@ void http_handler::Bad_Request(){
 void http_handler::Not_Found(){
 	bool do_it = !this->_res_buff.length();
 	this->_res_buff += STATUS_404;
-	this->_res_buff += "Server: " + this->_res.at("server") + CRLF;
+	this->_res_buff += "Host: " + this->_res.at("host") + CRLF;
 	this->_res_buff += CONNECTION_KEEP_ALIVE;
 	this->_res_buff += CRLF;
 	this->_req.clear();
@@ -531,7 +542,7 @@ void http_handler::Not_Found(){
 void http_handler::Method_Not_Allowed(){
 	bool do_it = !this->_res_buff.length();
 	this->_res_buff += STATUS_405;
-	this->_res_buff += "Server: " + this->_res.at("server") + CRLF;
+	this->_res_buff += "Host: " + this->_res.at("host") + CRLF;
 	this->_res_buff += CONNECTION_KEEP_ALIVE;
 	this->_res_buff += CRLF;
 	this->_req.clear();
@@ -544,7 +555,7 @@ void http_handler::Method_Not_Allowed(){
 void http_handler::Not_Acceptable(){
 	bool do_it = !this->_res_buff.length();
 	this->_res_buff += STATUS_406;
-	this->_res_buff += "Server: " + this->_res.at("server") + CRLF;
+	this->_res_buff += "Host: " + this->_res.at("host") + CRLF;
 	this->_res_buff += CONNECTION_KEEP_ALIVE;
 	this->_res_buff += CRLF;
 	this->_req.clear();
@@ -557,7 +568,7 @@ void http_handler::Not_Acceptable(){
 void http_handler::Length_Required(){
 	bool do_it = !this->_res_buff.length();
 	this->_res_buff += STATUS_411;
-	this->_res_buff += "Server: " + this->_res.at("server") + CRLF;
+	this->_res_buff += "Host: " + this->_res.at("host") + CRLF;
 	this->_res_buff += CONNECTION_KEEP_ALIVE;
 	this->_res_buff += CRLF;
 	this->_req.clear();
@@ -570,7 +581,7 @@ void http_handler::Length_Required(){
 void http_handler::I_m_a_teapot(){
 	bool do_it = !this->_res_buff.length();
 	this->_res_buff += STATUS_418;
-	this->_res_buff += SERVER_TEAPOT;
+	this->_res_buff += HOST_TEAPOT;
 	this->_res_buff += CONNECTION_KEEP_ALIVE;
 	this->_res_buff += CRLF;
 	this->_req.clear();
@@ -583,7 +594,7 @@ void http_handler::I_m_a_teapot(){
 void http_handler::Internal_Server_Error(){
 	bool do_it = !this->_res_buff.length();
 	this->_res_buff += STATUS_500;
-	this->_res_buff += "Server: " + this->_res.at("server") + CRLF;
+	this->_res_buff += "Host: " + this->_res.at("host") + CRLF;
 	this->_res_buff += CONNECTION_KEEP_ALIVE;
 	this->_res_buff += CRLF;
 	this->_req.clear();

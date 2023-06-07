@@ -15,7 +15,7 @@ void cgiw_handler::_action(short event){
 			this->set_del(this);
 			return ;
 		}
-		this->buf = this->buf.substr(r, this->buf.length() - r);
+		this->buf = this->buf.substr(r);
 	}
 	return ;
 }

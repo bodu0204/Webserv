@@ -75,11 +75,13 @@ port_conf::port_conf(std::string src):is_faile(false), _port(0), _proto(undfind_
         }else{
             this->is_faile = true; return ;}
     }
+	if (this->_port == 0){this->is_faile = true; return;}
 	if (this->_proto == undfind_protocol){this->is_faile = true; return;}
 	if (this->_proto == tcp_echo){
 		if (server_name.length() || location.length()){this->is_faile = true;}
 		return;
 	}
+	if (!server_name.length()){this->is_faile = true; return;}
 	server_conf sc(location);
 	if (sc.faile()){this->is_faile = true; return;}
 	this->_servers.insert(std::pair<std::string, server_conf>(server_name, sc));

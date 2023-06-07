@@ -1,6 +1,5 @@
 #include "location_conf.hpp"
 #include "../utils/utils.hpp"
-
 const location_conf location_conf::error;
 
 location_conf::location_conf():is_faile(true), _root(), _index(),_cgi(),_autoindex(true){return ;}
@@ -41,7 +40,7 @@ location_conf::location_conf(std::string src):is_faile(false), _root(), _index()
 			if (this->_index.length()) {this->is_faile = true; return;}
 			this->_index = value;
 			autoi = true;
-			this->_cgi = false;
+			this->_cgi = std::string();
 		}else if(buf == "cgi"){
 			std::string value = utils::new_token(src, this->is_faile, false, true);
 			if (this->is_faile) {return ;}
@@ -53,7 +52,7 @@ location_conf::location_conf(std::string src):is_faile(false), _root(), _index()
 			if (autoi) {this->is_faile = true; return;}
 			autoi = true;
 			if (value == "off")
-				this->_cgi = false;
+				this->_cgi = std::string();
 			else if (value != "on")
 				{this->is_faile = true; return;}
 		}else{

@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <vector>
+#include "../debug.h"
 
 class location_conf{
 private:

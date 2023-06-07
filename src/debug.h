@@ -12,7 +12,7 @@
 #define TESTx(msg, i) printf("[(%s/%d) %s ]%s:%lx\n", __FILE__, __LINE__, __func__, ((char *)msg), (unsigned long)(i)); fflush(stdin);
 #define TESTd(msg, i) printf("[(%s/%d) %s ]%s:%lf\n", __FILE__, __LINE__, __func__, ((char *)msg), (double)(i)); fflush(stdin);
 #define TESTp(msg, i) printf("[(%s/%d) %s ]%s:%p\n", __FILE__, __LINE__, __func__, ((char *)msg), (void *)(i)); fflush(stdin);
-#define TESTs(msg, i) printf("[(%s/%d) %s ]%s:%s\n", __FILE__, __LINE__, __func__, ((char *)msg), (char *)(i)); fflush(stdin);
+#define TESTs(msg, i) printf("[(%s/%d) %s ]%s:%s<\n", __FILE__, __LINE__, __func__, ((char *)msg), (char *)(i)); fflush(stdin);
 #define TESTc(msg, i) printf("[(%s/%d) %s ]%s:%c\n", __FILE__, __LINE__, __func__, ((char *)msg), (char)(i)); fflush(stdin);
 #define T printf("[(%s/%d) %s ]\n", __FILE__, __LINE__, __func__); fflush(stdin);
 #define T_ printf("---------------------------------------------[(%s/%d) %s ]\n", __FILE__, __LINE__, __func__); fflush(stdin);
@@ -21,7 +21,7 @@
 #define Tx(i) printf("[(%s/%d) %s ]%s:%lx\n", __FILE__, __LINE__, __func__, #i, (unsigned long)(i)); fflush(stdin);
 #define Td(i) printf("[(%s/%d) %s ]%s:%lf\n", __FILE__, __LINE__, __func__, #i, (double)(i)); fflush(stdin);
 #define Tp(i) printf("[(%s/%d) %s ]%s:%p\n", __FILE__, __LINE__, __func__, #i, (void *)(i)); fflush(stdin);
-#define Ts(i) printf("[(%s/%d) %s ]%s:%s\n", __FILE__, __LINE__, __func__, #i, (char *)(i)); fflush(stdin);
+#define Ts(i) printf("[(%s/%d) %s ]%s:%s<\n", __FILE__, __LINE__, __func__, #i, (char *)(i)); fflush(stdin);
 #define Tc(i) printf("[(%s/%d) %s ]%s:%c\n", __FILE__, __LINE__, __func__, #i, (char)(i)); fflush(stdin);
 #define FORn(x,j) {printf("[(%s/%d) %s ]%s[]:", __FILE__, __LINE__, __func__, #x);for(size_t i = 0; j; i++){printf("%ld,", (long)(x[i])); fflush(stdin);}printf("\n");}
 #define FORu(x,j) {printf("[(%s/%d) %s ]%s[]:", __FILE__, __LINE__, __func__, #x);for(size_t i = 0; j; i++){printf("%ld,", (unsigned long)(x[i])); fflush(stdin);}printf("\n");}

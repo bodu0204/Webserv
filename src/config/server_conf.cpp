@@ -22,7 +22,7 @@ const location_conf &server_conf::location(std::string src, std::string &pattern
 	std::map<std::string,location_conf>::const_iterator loc = this->_locations.end();
 	size_t len = 0;
 		for (std::map<std::string,location_conf>::const_iterator i = this->_locations.begin();i != this->_locations.end(); i++){
-		if (i->first.length() > len && src.substr(0, i->first.length()) == i->first){
+		if (i->first.length() > len && src.substr(0) == i->first){
 			loc = i;
 			len = i->first.length();
 		}
@@ -45,7 +45,7 @@ server_conf::server_conf(std::string src):is_faile(false),_locations(){
 		if(buf == "location"){
 			std::string pattern = utils::new_token(src, this->is_faile);
 			if (this->is_faile) {return ;}
-			if (this->_locations.find(pattern) == this->_locations.end()) {this->is_faile = true; return;}
+			if (this->_locations.find(pattern) != this->_locations.end()) {this->is_faile = true; return;}
 			std::string value = utils::new_token(src, this->is_faile, true);
 			if (this->is_faile) {return ;}
 			location_conf lf(value);
