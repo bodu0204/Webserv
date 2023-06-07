@@ -51,11 +51,51 @@ void http_handler::callback_end(handler *target){
     	 	waitpid(this->_cgi_pid, &wstatus, 0);
 			this->_cgi_pid = 0;
 		}
+		bool doit = !this->_res_buff.length();
+		if (this->_res.find(KEY_STATUS) != this->_res.end())
+			this->_res_buff += "HTTP/1.1 " + this->_res[KEY_STATUS] + CRLF;
+		else
+			this->_res_buff += STATUS_200;
+		this->_res_buff += this->_res[KEY_CGIHEAD] + CRLF;
+		if (this->_res.find(KEY_CGIBODY) != this->_res.end())
+			this->_res_buff += this->_res[KEY_CGIBODY];
+		this->_req.clear();
+		this->_res.clear();
+		if (doit)
+			this->_action(POLL_OUT);
 	}
 	handler::callback_end(target);
 }
 
-void http_handler::callback(std::string str){}
+void http_handler::callback(std::string str){
+	if (this->_res.find(KEY_CGIBODY) != this->_res.end())
+	{
+		str = this->_res[KEY_CGIBUFF] + str;
+		this->_res[KEY_CGIBUFF].clear();
+		while (str.length())
+		{
+			size_t l = str.find(CRLF);
+			if (l == UINT64_MAX){
+				l = str.find("\n");
+				if (l == UINT64_MAX)
+					{this->_res[KEY_CGIBUFF] = str; return ;}
+				l++;
+			}
+			else
+				l += 2;
+			std::string h = str.substr(0,l);
+			str = str.substr(l, str.length());
+			if (h == CRLF || h == "\n")
+				{this->_res[KEY_CGIBODY] = str; return;}
+			else if (!memcmp(h.c_str(), "Status:", 7))
+				this->_res[KEY_STATUS] = h.substr(7, h.length());
+			else
+				this->_res[KEY_CGIHEAD] += h;
+		}
+	}
+	this->_res[KEY_CGIBODY] = str;
+	return ;
+}
 
 void http_handler::exec(){
 	const server_conf &sc = this->_conf.server(this->_req.at("server"));
@@ -152,6 +192,7 @@ void http_handler::exec_CGI(const location_conf &lc){
 			env.push_back(strdup(("HTTP_" + meta + "=" + i->second).c_str()));
 		}
 	}
+	env.push_back(strdup("REDIRECT_STATUS="));
 	int fds[2];
 	pipe(fds);
 	this->_cgi_pid = fork();
@@ -270,7 +311,19 @@ void http_handler::exec_std(const location_conf &lc){
 			{this->Not_Found(); return ;}
 	}else
 		{this->Method_Not_Allowed(); return ;}}
-	
+	bool doit = !this->_res_buff.length();
+	this->_res_buff += "HTTP/1.1 " + this->_res[KEY_STATUS] + CRLF;
+	for (std::map<std::string, std::string>::iterator i = this->_res.begin(); i != this->_res.end(); i++){
+		if (i->first[0] != ':')
+			this->_res_buff += i->first + ": " + i->second + CRLF;
+	}
+	this->_res_buff += CRLF;
+	if (this->_res[KEY_BODY].length())
+		this->_res_buff = this->_res[KEY_BODY];
+	this->_req.clear();
+	this->_res.clear();
+	if (doit)
+		this->_action(POLL_OUT);
 }
 
 void http_handler::_to_req(){
@@ -388,7 +441,38 @@ void http_handler::_to_req(){
 				&& this->_body < 0)
 				{this->Length_Required(); return;}
 		}
-		//bodyのパース
+		if (this->_body >= 0){
+			if (this->_req.find("transfer-encoding") != this->_req.end()){
+				while (this->_body >= 0){
+					size_t l = this->_body < this->_req_buff.length() ? this->_body : this->_req_buff.length();
+					this->_req[KEY_BODY] += this->_req_buff.substr(0, l);
+					this->_req_buff = this->_req_buff.substr(l, this->_req_buff.length());
+					this->_body -= l;
+					if (!this->_req_buff.length()) 
+						return;
+					l = this->_req_buff.find("\n");
+					if (l == UINT64_MAX)
+						return;
+					l++;
+					std::stringstream ss;
+					ss << std::hex << this->_req_buff.substr(0, l);
+					this->_req_buff = this->_req_buff.substr(l, this->_req_buff.length());
+					ss >> this->_body;
+					if (this->_body == 0){
+						this->_body = -1;
+					}
+				}
+			}
+			else if (this->_req.find("content-length") != this->_req.end()){
+				size_t l = this->_body < this->_req_buff.length() ? this->_body : this->_req_buff.length();
+				this->_req[KEY_BODY] += this->_req_buff.substr(0, l);
+				this->_req_buff = this->_req_buff.substr(l, this->_req_buff.length());
+				this->_body -= l;
+				if (this->_body == 0){
+					this->_body = -1;
+				}
+			}
+		}
 		if (this->_body < 0)
 			this->exec();
 	}
@@ -412,12 +496,17 @@ ssize_t http_handler::_read(std::string &target){
 http_handler::http_handler(handler *parent, int descriptor, const port_conf &conf, struct sockaddr_in info):\
 	handler(parent, descriptor, POLL_IN|POLL_OUT, 40),_conf(conf),_req_buff(),_req(),_cgi_pid(0),_cgi_w(),_cgi_r(),_res(),_res_buff(),_info(info),_body(-1){}
 
-http_handler::~http_handler(){}
+http_handler::~http_handler(){
+	if (this->_cgi_pid){
+		kill(this->_cgi_pid, SIGINT);
+		int wstatus;
+    	waitpid(this->_cgi_pid, &wstatus, 0);
+	}
+}
 
 void http_handler::Bad_Request(){
 	bool do_it = !this->_res_buff.length();
 	this->_res_buff += STATUS_400;
-	this->_res_buff += CRLF;
 	this->_req_buff.clear();
 	this->_req.clear();
 	this->_res.clear();
@@ -429,7 +518,45 @@ void http_handler::Bad_Request(){
 void http_handler::Not_Found(){
 	bool do_it = !this->_res_buff.length();
 	this->_res_buff += STATUS_404;
+	this->_res_buff += "Server: " + this->_res.at("server") + CRLF;
+	this->_res_buff += CONNECTION_KEEP_ALIVE;
 	this->_res_buff += CRLF;
+	this->_req.clear();
+	this->_res.clear();
+	if (do_it)
+		this->_action(POLL_OUT);
+	return ;
+}
+
+void http_handler::Method_Not_Allowed(){
+	bool do_it = !this->_res_buff.length();
+	this->_res_buff += STATUS_405;
+	this->_res_buff += "Server: " + this->_res.at("server") + CRLF;
+	this->_res_buff += CONNECTION_KEEP_ALIVE;
+	this->_res_buff += CRLF;
+	this->_req.clear();
+	this->_res.clear();
+	if (do_it)
+		this->_action(POLL_OUT);
+	return ;
+}
+
+void http_handler::Not_Acceptable(){
+	bool do_it = !this->_res_buff.length();
+	this->_res_buff += STATUS_406;
+	this->_res_buff += "Server: " + this->_res.at("server") + CRLF;
+	this->_res_buff += CONNECTION_KEEP_ALIVE;
+	this->_res_buff += CRLF;
+	this->_req.clear();
+	this->_res.clear();
+	if (do_it)
+		this->_action(POLL_OUT);
+	return ;
+}
+
+void http_handler::Length_Required(){
+	bool do_it = !this->_res_buff.length();
+	this->_res_buff += STATUS_411;
 	this->_res_buff += "Server: " + this->_res.at("server") + CRLF;
 	this->_res_buff += CONNECTION_KEEP_ALIVE;
 	this->_res_buff += CRLF;
@@ -444,6 +571,19 @@ void http_handler::I_m_a_teapot(){
 	bool do_it = !this->_res_buff.length();
 	this->_res_buff += STATUS_418;
 	this->_res_buff += SERVER_TEAPOT;
+	this->_res_buff += CONNECTION_KEEP_ALIVE;
+	this->_res_buff += CRLF;
+	this->_req.clear();
+	this->_res.clear();
+	if (do_it)
+		this->_action(POLL_OUT);
+	return ;
+}
+
+void http_handler::Internal_Server_Error(){
+	bool do_it = !this->_res_buff.length();
+	this->_res_buff += STATUS_500;
+	this->_res_buff += "Server: " + this->_res.at("server") + CRLF;
 	this->_res_buff += CONNECTION_KEEP_ALIVE;
 	this->_res_buff += CRLF;
 	this->_req.clear();

@@ -4,6 +4,7 @@
 #include <sys/socket.h>
 #include <poll.h>
 #include "echo_handler.hpp"
+#include "http_handler.hpp"
 
 #include "debug.h"
 
@@ -24,8 +25,7 @@ void accept_handler::_action(short event){
 		this->set_add(new echo_handler(this, desc));
 		break;
 	case http:
-		//this->set_add(/* code */);
-		close(desc);//test
+		this->set_add(new http_handler(this,desc,this->_conf,addr));
 		break;
 	case https:
 		//this->set_add(/* code */);

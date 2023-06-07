@@ -52,6 +52,8 @@ static const std::map<std::string, std::string>mime;
 #define KEY_TARGET ":target"
 #define KEY_VERSION ":version"
 #define KEY_CGIBUFF ":CGIbuff"
+#define KEY_CGIHEAD ":CGIhead"
+#define KEY_CGIBODY ":CGIbody"
 #define KEY_STATUS ":status"
 
 #define STATUS_200 "HTTP/1.1 200 OK\r\n"
