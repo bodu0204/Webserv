@@ -73,3 +73,181 @@ static const std::map<std::string, std::string>mime;
 #define SERVER_TEAPOT "Server: teapot\r\n"
 #define CONTENT_LENGTH_ZERO "Content-Length: 0\r\n"
 #define CONNECTION_KEEP_ALIVE "Connection: keep-alive\r\n"
+
+
+
+#define BODY_404 "<!DOCTYPE html>\
+<html>\
+<head>\
+  <title>404 - Not Found</title>\
+  <style>\
+    body {\
+      background-color: #E0F2F1;\
+      font-family: Arial, sans-serif;\
+      text-align: center;\
+      padding-top: 100px;\
+    }\
+\
+    h1 {\
+      color: #00B0FF;\
+      font-size: 48px;\
+    }\
+\
+    p {\
+      color: #424242;\
+      font-size: 24px;\
+    }\
+\
+    img {\
+      width: 300px;\
+      height: auto;\
+      margin-bottom: 30px;\
+    }\
+  </style>\
+</head>\
+<body>\
+  <h1>Oops!</h1>\
+  <p>404 - Page Not Found</p>\
+</body>\
+</html>"
+
+#define BODY_405 "<!DOCTYPE html>\
+<html>\
+<head>\
+  <title>404 - Not Found</title>\
+  <style>\
+    body {\
+      background-color: #E0F2F1;\
+      font-family: Arial, sans-serif;\
+      text-align: center;\
+      padding-top: 100px;\
+    }\
+\
+    h1 {\
+      color: #00B0FF;\
+      font-size: 48px;\
+    }\
+\
+    p {\
+      color: #424242;\
+      font-size: 24px;\
+    }\
+\
+    img {\
+      width: 300px;\
+      height: auto;\
+      margin-bottom: 30px;\
+    }\
+  </style>\
+</head>\
+<body>\
+  <h1>Oops!</h1>\
+  <p>405 - Method Not Allowed</p>\
+</body>\
+</html>"
+
+#define BODY_406 "<!DOCTYPE html>\
+<html>\
+<head>\
+  <title>404 - Not Found</title>\
+  <style>\
+    body {\
+      background-color: #E0F2F1;\
+      font-family: Arial, sans-serif;\
+      text-align: center;\
+      padding-top: 100px;\
+    }\
+\
+    h1 {\
+      color: #00B0FF;\
+      font-size: 48px;\
+    }\
+\
+    p {\
+      color: #424242;\
+      font-size: 24px;\
+    }\
+\
+    img {\
+      width: 300px;\
+      height: auto;\
+      margin-bottom: 30px;\
+    }\
+  </style>\
+</head>\
+<body>\
+  <h1>Oops!</h1>\
+  <p>406 - Not Acceptable</p>\
+</body>\
+</html>"
+
+#define BODY_411 "<!DOCTYPE html>\
+<html>\
+<head>\
+  <title>404 - Not Found</title>\
+  <style>\
+    body {\
+      background-color: #E0F2F1;\
+      font-family: Arial, sans-serif;\
+      text-align: center;\
+      padding-top: 100px;\
+    }\
+\
+    h1 {\
+      color: #00B0FF;\
+      font-size: 48px;\
+    }\
+\
+    p {\
+      color: #424242;\
+      font-size: 24px;\
+    }\
+\
+    img {\
+      width: 300px;\
+      height: auto;\
+      margin-bottom: 30px;\
+    }\
+  </style>\
+</head>\
+<body>\
+  <h1>Oops!</h1>\
+  <p>411 - Length Required</p>\
+</body>\
+</html>"
+
+#define BODY_418 "<!DOCTYPE html>\
+<html>\
+<head>\
+  <title>404 - Not Found</title>\
+  <style>\
+    body {\
+      background-color: #E0F2F1;\
+      font-family: Arial, sans-serif;\
+      text-align: center;\
+      padding-top: 100px;\
+    }\
+\
+    h1 {\
+      color: #00B0FF;\
+      font-size: 48px;\
+    }\
+\
+    p {\
+      color: #424242;\
+      font-size: 24px;\
+    }\
+\
+    img {\
+      width: 300px;\
+      height: auto;\
+      margin-bottom: 30px;\
+    }\
+  </style>\
+</head>\
+<body>\
+  <h1>Oops!</h1>\
+  <p>418 - I'm a teapot</p>\
+</body>\
+</html>"
+

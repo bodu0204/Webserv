@@ -171,7 +171,7 @@ void http_handler::exec_CGI(const location_conf &lc){
 			env.push_back(strdup(("QUERY_STRING=" + buff.substr(l + 1)).c_str()));
 			buff = buff.substr(0, l);
 		}
-		env.push_back(strdup(("PATH_INFO=" + buff).c_str()));
+		env.push_back(strdup(("PATH_INFO=" + lc.root() + buff).c_str()));
 		env.push_back(strdup(("PATH_TRANSLATED=" + lc.root() + buff).c_str()));
 		env.push_back(strdup(("SCRIPT_NAME=" + lc.root() + buff).c_str()));
 	}
@@ -545,8 +545,13 @@ void http_handler::Not_Found(){
 			this->_res_buff += "Server: " + it->second + CRLF;
 	}
 	this->_res_buff += CONNECTION_KEEP_ALIVE;
-	this->_res_buff += CONTENT_LENGTH_ZERO;
+	{
+		std::stringstream ss;
+		ss<<strlen(BODY_404);
+		this->_res_buff += "Content-Length: " + ss.str() + CRLF;
+	}
 	this->_res_buff += CRLF;
+	this->_res_buff += BODY_404;
 	this->_req.clear();
 	this->_res.clear();
 	if (do_it)
@@ -563,8 +568,13 @@ void http_handler::Method_Not_Allowed(){
 			this->_res_buff += "Server: " + it->second + CRLF;
 	}
 	this->_res_buff += CONNECTION_KEEP_ALIVE;
-	this->_res_buff += CONTENT_LENGTH_ZERO;
+	{
+		std::stringstream ss;
+		ss<<strlen(BODY_405);
+		this->_res_buff += "Content-Length: " + ss.str() + CRLF;
+	}
 	this->_res_buff += CRLF;
+	this->_res_buff += BODY_405;
 	this->_req.clear();
 	this->_res.clear();
 	if (do_it)
@@ -581,8 +591,13 @@ void http_handler::Not_Acceptable(){
 			this->_res_buff += "Server: " + it->second + CRLF;
 	}
 	this->_res_buff += CONNECTION_KEEP_ALIVE;
-	this->_res_buff += CONTENT_LENGTH_ZERO;
+	{
+		std::stringstream ss;
+		ss<<strlen(BODY_406);
+		this->_res_buff += "Content-Length: " + ss.str() + CRLF;
+	}
 	this->_res_buff += CRLF;
+	this->_res_buff += BODY_406;
 	this->_req.clear();
 	this->_res.clear();
 	if (do_it)
@@ -599,8 +614,13 @@ void http_handler::Length_Required(){
 			this->_res_buff += "Server: " + it->second + CRLF;
 	}
 	this->_res_buff += CONNECTION_KEEP_ALIVE;
-	this->_res_buff += CONTENT_LENGTH_ZERO;
+	{
+		std::stringstream ss;
+		ss<<strlen(BODY_411);
+		this->_res_buff += "Content-Length: " + ss.str() + CRLF;
+	}
 	this->_res_buff += CRLF;
+	this->_res_buff += BODY_411;
 	this->_req.clear();
 	this->_res.clear();
 	if (do_it)
@@ -613,8 +633,13 @@ void http_handler::I_m_a_teapot(){
 	this->_res_buff += STATUS_418;
 	this->_res_buff += SERVER_TEAPOT;
 	this->_res_buff += CONNECTION_KEEP_ALIVE;
-	this->_res_buff += CONTENT_LENGTH_ZERO;
+	{
+		std::stringstream ss;
+		ss<<strlen(BODY_418);
+		this->_res_buff += "Content-Length: " + ss.str() + CRLF;
+	}
 	this->_res_buff += CRLF;
+	this->_res_buff += BODY_418;
 	this->_req.clear();
 	this->_res.clear();
 	if (do_it)

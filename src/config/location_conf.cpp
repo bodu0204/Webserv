@@ -52,7 +52,7 @@ location_conf::location_conf(std::string src):is_faile(false), _root(), _index()
 			if (autoi) {this->is_faile = true; return;}
 			autoi = true;
 			if (value == "off")
-				this->_cgi = std::string();
+				this->_autoindex = false;
 			else if (value != "on")
 				{this->is_faile = true; return;}
 		}else{
