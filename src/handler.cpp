@@ -3,7 +3,7 @@
 #include "debug.h"
 
 handler::handler(handler *_parent, int _descriptor, unsigned _events ,long life):\
-parent(_parent),descriptor(_descriptor),events(_events),_life(life),_limit(life==LONG_MAX ? life : time(NULL) + life){
+_life(life),_limit(life==LONG_MAX ? life : time(NULL) + life),parent(_parent),descriptor(_descriptor),events(_events){
 	if (_parent)
 		parent->_child.insert(this);
 }
@@ -76,6 +76,6 @@ handler::~handler(){
 
 void handler::callback(std::string){}
 
-handler::handler():parent(0),descriptor(0), events(0),_life(0),_limit(time(NULL)){}//not call
+handler::handler():_life(0),_limit(time(NULL)),parent(0),descriptor(0),events(0){}//not call
 const handler &handler::operator=(const handler&){return *this;}//not call
-handler::handler(const handler& src):parent(0),descriptor(0), events(0),_life(0),_limit(time(NULL)){}//not call
+handler::handler(const handler&):_life(0),_limit(time(NULL)),parent(0),descriptor(0),events(0){}//not call

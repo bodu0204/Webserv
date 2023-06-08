@@ -250,7 +250,7 @@ void http_handler::exec_std(const location_conf &lc){
 		int fd = open((lc.root() + this->_req[KEY_TARGET]).c_str(), O_WRONLY | O_CREAT, S_IREAD | S_IWRITE);
 		if (fd < 0)
 			{this->Not_Found(); return ;}
-		if(write(fd, this->_req[KEY_BODY].c_str(),this->_req[KEY_BODY].length()) < this->_req[KEY_BODY].length())
+		if(write(fd, this->_req[KEY_BODY].c_str(),this->_req[KEY_BODY].length()) < static_cast<ssize_t>(this->_req[KEY_BODY].length()))
 			{unlink((lc.root() + this->_req[KEY_TARGET]).c_str()); this->Internal_Server_Error(); return ;}
 	}else{
 	struct stat sb;
@@ -465,7 +465,7 @@ void http_handler::_to_req(){
 		if (this->_body >= 0){
 			if (this->_req.find("transfer-encoding") != this->_req.end()){
 				while (this->_body >= 0){
-					size_t l = this->_body < this->_req_buff.length() ? this->_body : this->_req_buff.length();
+					size_t l = this->_body < static_cast<ssize_t>(this->_req_buff.length()) ? static_cast<size_t>(this->_body) : this->_req_buff.length();
 					this->_req[KEY_BODY] += this->_req_buff.substr(0, l);
 					this->_req_buff = this->_req_buff.substr(l);
 					this->_body -= l;
@@ -485,7 +485,7 @@ void http_handler::_to_req(){
 				}
 			}
 			else if (this->_req.find("content-length") != this->_req.end()){
-				size_t l = this->_body < this->_req_buff.length() ? this->_body : this->_req_buff.length();
+				size_t l = this->_body < static_cast<ssize_t>(this->_req_buff.length()) ? static_cast<size_t>(this->_body) : this->_req_buff.length();
 				this->_req[KEY_BODY] += this->_req_buff.substr(0, l);
 				this->_req_buff = this->_req_buff.substr(l);
 				this->_body -= l;
@@ -515,7 +515,7 @@ ssize_t http_handler::_read(std::string &target){
 }
 
 http_handler::http_handler(handler *parent, int descriptor, const port_conf &conf, struct sockaddr_in info):\
-	handler(parent, descriptor, POLL_IN|POLL_OUT, 40),_conf(conf),_req_buff(),_req(),_cgi_pid(0),_cgi_w(),_cgi_r(),_res(),_res_buff(),_info(info),_body(-1){}
+	handler(parent, descriptor, POLL_IN|POLL_OUT, 40),_info(info),_conf(conf),_req_buff(),_body(-1),_req(),_cgi_pid(0),_cgi_w(),_cgi_r(),_res(),_res_buff(){}
 
 http_handler::~http_handler(){
 	if (this->_cgi_pid){
@@ -640,7 +640,7 @@ void http_handler::Internal_Server_Error(){
 	return ;
 }
 
-http_handler::http_handler():handler(NULL, 0, 0),_conf(port_conf::error),_req_buff(),_req(),_cgi_pid(0),_cgi_w(),_cgi_r(),_res(),_res_buff(),_info(),_body(-1){}//not use
-http_handler::http_handler(const http_handler&):handler(NULL, 0, 0),_conf(port_conf::error),_req_buff(),_req(),_cgi_pid(0),_cgi_w(),_cgi_r(),_res(),_res_buff(),_info(),_body(-1){}//not use
+http_handler::http_handler():handler(NULL, 0, 0), _info(),_conf(port_conf::error),_req_buff(),_body(-1),_req(),_cgi_pid(0),_cgi_w(),_cgi_r(),_res(),_res_buff(){}//not use
+http_handler::http_handler(const http_handler&):handler(NULL, 0, 0), _info(),_conf(port_conf::error),_req_buff(),_body(-1),_req(),_cgi_pid(0),_cgi_w(),_cgi_r(),_res(),_res_buff(){}//not use
 const http_handler &http_handler::operator=(const http_handler&){return (*this);}//not use
 

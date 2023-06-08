@@ -84,7 +84,7 @@ void echo_handler::callback(std::string set){
 		this->action(POLL_OUT);
 }
 
-echo_handler::echo_handler(handler *parent,int descriptor):handler(parent, descriptor, POLL_IN|POLL_OUT, 40),_cgi_w(NULL),_cgi_r(NULL),_cgi_pid(0),_res_buff(){}
+echo_handler::echo_handler(handler *parent,int descriptor):handler(parent, descriptor, POLL_IN|POLL_OUT, 40),_res_buff(),_cgi_w(NULL),_cgi_r(NULL),_cgi_pid(0){}
 
 echo_handler::~echo_handler(){
 	if (this->_cgi_pid){
@@ -96,6 +96,6 @@ echo_handler::~echo_handler(){
 }
 
 
-echo_handler::echo_handler():handler(NULL, 0, 0),_cgi_w(NULL),_cgi_r(NULL),_cgi_pid(0),_res_buff(){}//not use
-echo_handler::echo_handler(const echo_handler&):handler(NULL, 0, 0),_cgi_w(NULL),_cgi_r(NULL),_cgi_pid(0),_res_buff(){}//not use
+echo_handler::echo_handler():handler(NULL, 0, 0),_res_buff(),_cgi_w(NULL),_cgi_r(NULL),_cgi_pid(0){}//not use
+echo_handler::echo_handler(const echo_handler&):handler(NULL, 0, 0),_res_buff(),_cgi_w(NULL),_cgi_r(NULL),_cgi_pid(0){}//not use
 const echo_handler &echo_handler::operator=(const echo_handler&){return (*this);}//not use

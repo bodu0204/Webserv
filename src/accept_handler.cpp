@@ -15,8 +15,9 @@ handler(NULL, descriptor, POLL_IN), _conf(conf){}
 
 accept_handler::~accept_handler(){}
 
-void accept_handler::_action(short event){
-	struct sockaddr_in addr = {0};
+void accept_handler::_action(short){
+	struct sockaddr_in addr;
+	bzero(&addr, sizeof(addr));
 	socklen_t addrlen = sizeof(addr);
 	int desc = accept(this->descriptor, (struct sockaddr *)&addr, &addrlen);
 	switch (this->_conf.protocol())

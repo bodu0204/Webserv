@@ -6,7 +6,7 @@
 
 #include "debug.h"
 
-void cgir_handler::_action(short event){
+void cgir_handler::_action(short){
 	char buff[BUFFERSIZE + 1];
 	ssize_t r = read(this->descriptor, buff, BUFFERSIZE);
 	if (r < 0){

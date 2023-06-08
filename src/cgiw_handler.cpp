@@ -6,7 +6,7 @@
 
 #include "debug.h"
 
-void cgiw_handler::_action(short event){
+void cgiw_handler::_action(short){
 	if (this->buf.length())
 	{
 		ssize_t r = write(this->descriptor, this->buf.c_str(), this->buf.length());
@@ -33,13 +33,13 @@ size_t cgiw_handler::set_write(std::string req, bool end){
 	return (r);
 }
 
-cgiw_handler::cgiw_handler(handler *parent, int descriptor):buf(),handler(parent, descriptor, POLL_OUT),_end(false){}
+cgiw_handler::cgiw_handler(handler *parent, int descriptor):handler(parent, descriptor, POLL_OUT),buf(),_end(false){}
 
 cgiw_handler::~cgiw_handler(){}
 
-cgiw_handler::cgiw_handler():buf(),handler(NULL, 0, 0),_end(false){}//not use
+cgiw_handler::cgiw_handler():handler(NULL, 0, 0),buf(),_end(false){}//not use
 
-cgiw_handler::cgiw_handler(const cgiw_handler&):buf(),handler(NULL, 0, 0),_end(false){}//not use
+cgiw_handler::cgiw_handler(const cgiw_handler&):handler(NULL, 0, 0),buf(),_end(false){}//not use
 
 const cgiw_handler &cgiw_handler::operator=(const cgiw_handler&){return (*this);}//not use
 

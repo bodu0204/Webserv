@@ -181,9 +181,6 @@ static inline int is_argerror(int argc, char *argv[]){
 		|| memcmp(argv[1] + strlen(argv[1]) - strlen(EXTENSION), EXTENSION, sizeof(EXTENSION)));
 }
 
-static void rm_handler(handler* target){
-}
-
 static void close_handler(){
 	for (std::map<int ,handler*>::iterator i = handlers.begin(); i != handlers.end(); i++){
 		delete i->second;
