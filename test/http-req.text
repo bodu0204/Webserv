@@ -1,4 +1,7 @@
-GET / HTTP/1.1
+PUT /hello.html HTTP/1.1
 Host: localhost
 User-Agent: curl/7.79.1
 Accept: */*
+Content-Length: 13
+
+Hello world!

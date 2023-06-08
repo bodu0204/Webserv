@@ -22,7 +22,7 @@ const location_conf &server_conf::location(std::string src, std::string &pattern
 	std::map<std::string,location_conf>::const_iterator loc = this->_locations.end();
 	size_t len = 0;
 		for (std::map<std::string,location_conf>::const_iterator i = this->_locations.begin();i != this->_locations.end(); i++){
-		if (i->first.length() > len && src.substr(0) == i->first){
+		if (i->first.length() > len && src.substr(0, i->first.length()) == i->first){
 			loc = i;
 			len = i->first.length();
 		}

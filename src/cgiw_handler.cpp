@@ -17,23 +17,29 @@ void cgiw_handler::_action(short event){
 		}
 		this->buf = this->buf.substr(r);
 	}
+	if (!this->buf.length() && this->_end)
+		this->set_del(this);
 	return ;
 }
 
-void cgiw_handler::set_write(std::string req){
+size_t cgiw_handler::set_write(std::string req, bool end){
 	bool doit = !this->buf.length();
 	this->buf += req;
-	this->_action(POLL_OUT);
-	return ;
+	if (doit)
+		this->_action(POLL_OUT);
+	size_t r = this->buf.length();
+	if (r && end)
+		this->_end = true;
+	return (r);
 }
 
-cgiw_handler::cgiw_handler(handler *parent, int descriptor):buf(),handler(parent, descriptor, POLL_OUT){}
+cgiw_handler::cgiw_handler(handler *parent, int descriptor):buf(),handler(parent, descriptor, POLL_OUT),_end(false){}
 
 cgiw_handler::~cgiw_handler(){}
 
-cgiw_handler::cgiw_handler():buf(),handler(NULL, 0, 0){}//not use
+cgiw_handler::cgiw_handler():buf(),handler(NULL, 0, 0),_end(false){}//not use
 
-cgiw_handler::cgiw_handler(const cgiw_handler&):buf(),handler(NULL, 0, 0){}//not use
+cgiw_handler::cgiw_handler(const cgiw_handler&):buf(),handler(NULL, 0, 0),_end(false){}//not use
 
 const cgiw_handler &cgiw_handler::operator=(const cgiw_handler&){return (*this);}//not use
 

@@ -35,6 +35,7 @@ Ts(buff.c_str())
 			this->set_del(this);
 			return ;
 		}
+Ts(this->_res_buff.substr(0,r).c_str())
 		this->_res_buff = this->_res_buff.substr(r);
 	}
 	return ;
@@ -51,15 +52,25 @@ void http_handler::callback_end(handler *target){
 			int wstatus;
     	 	waitpid(this->_cgi_pid, &wstatus, 0);
 			this->_cgi_pid = 0;
+			if (WEXITSTATUS(wstatus) == 42)
+				{this->Internal_Server_Error(); return;}
 		}
 		bool doit = !this->_res_buff.length();
 		if (this->_res.find(KEY_STATUS) != this->_res.end())
-			this->_res_buff += "HTTP/1.1 " + this->_res[KEY_STATUS] + CRLF;
+			this->_res_buff += "HTTP/1.1 " + this->_res[KEY_STATUS];
 		else
 			this->_res_buff += STATUS_200;
-		this->_res_buff += this->_res[KEY_CGIHEAD] + CRLF;
-		if (this->_res.find(KEY_CGIBODY) != this->_res.end())
+		this->_res_buff += this->_res[KEY_CGIHEAD];
+		if (this->_res.find(KEY_CGIBODY) != this->_res.end()){
+			std::stringstream ss;
+			ss << this->_res[KEY_CGIBODY].length();
+			this->_res_buff += "Content-Length: " + ss.str() + CRLF;
+			this->_res_buff += CRLF;
 			this->_res_buff += this->_res[KEY_CGIBODY];
+		}else{
+			this->_res_buff += CONTENT_LENGTH_ZERO;
+			this->_res_buff += CRLF;
+		}
 		this->_req.clear();
 		this->_res.clear();
 		if (doit)
@@ -69,7 +80,7 @@ void http_handler::callback_end(handler *target){
 }
 
 void http_handler::callback(std::string str){
-	if (this->_res.find(KEY_CGIBODY) != this->_res.end())
+	if (this->_res.find(KEY_CGIBODY) == this->_res.end())
 	{
 		str = this->_res[KEY_CGIBUFF] + str;
 		this->_res[KEY_CGIBUFF].clear();
@@ -94,22 +105,21 @@ void http_handler::callback(std::string str){
 				this->_res[KEY_CGIHEAD] += h;
 		}
 	}
-	this->_res[KEY_CGIBODY] = str;
+	this->_res[KEY_CGIBODY] += str;
 	return ;
 }
 
 void http_handler::exec(){
-T
 	const server_conf &sc = this->_conf.server(this->_req["host"]);
 	if (sc.faile()){
-		if (this->_req.at("host") == "teapot" && this->_req.at(KEY_TARGET) == "/coffee")
+		if (this->_req["host"] == "teapot" && this->_req[KEY_TARGET] == "/coffee")
 			this->I_m_a_teapot();
 		else
 			this->Bad_Request();
 		return ;
 	}
 	std::string pattern;
-	const location_conf &lc =sc.location(this->_req.at(KEY_TARGET), pattern);
+	const location_conf &lc =sc.location(this->_req[KEY_TARGET], pattern);
 	if (lc.faile() || this->_req[KEY_TARGET].find("/..") != UINT64_MAX){
 		this->Not_Found(); return ;
 	}
@@ -161,7 +171,9 @@ void http_handler::exec_CGI(const location_conf &lc){
 			env.push_back(strdup(("QUERY_STRING=" + buff.substr(l + 1)).c_str()));
 			buff = buff.substr(0, l);
 		}
-		env.push_back(strdup(("SCRIPT_NAME=" + buff).c_str()));
+		env.push_back(strdup(("PATH_INFO=" + buff).c_str()));
+		env.push_back(strdup(("PATH_TRANSLATED=" + lc.root() + buff).c_str()));
+		env.push_back(strdup(("SCRIPT_NAME=" + lc.root() + buff).c_str()));
 	}
 	{
 		unsigned addr = ntohl(this->_info.sin_addr.s_addr);
@@ -195,20 +207,20 @@ void http_handler::exec_CGI(const location_conf &lc){
 		}
 	}
 	env.push_back(strdup("REDIRECT_STATUS="));
+	env.push_back(NULL);
 	int fds[2];
 	pipe(fds);
 	this->_cgi_pid = fork();
 	if(!this->_cgi_pid){
-		dup2(fds[STDIN_FILENO], STDIN_FILENO);
-		dup2(fds[STDOUT_FILENO], STDOUT_FILENO);
-		close(fds[0]);
-		close(fds[1]);
 		char *args[2];
 		args[0] = strdup(lc.cgi().c_str());
 		args[1] = NULL;
+		dup2(fds[STDIN_FILENO], STDIN_FILENO);
+		dup2(fds[STDOUT_FILENO], STDOUT_FILENO);
+		close(fds[STDIN_FILENO]);
+		close(fds[STDOUT_FILENO]);
 		execve(args[0], args, env.data());
-		this->Internal_Server_Error();
-		return ;
+		exit(42);
 	}
 	for (std::vector<char *>::iterator i = env.begin(); i != env.end(); i++){
 		free(*i);
@@ -223,15 +235,17 @@ void http_handler::exec_CGI(const location_conf &lc){
 	this->_cgi_w = new cgiw_handler(this, fds[1]);
 	this->set_add(this->_cgi_r);
 	this->set_add(this->_cgi_w);
-	this->_cgi_w->set_write(this->_req[KEY_BODY]);
+	if (!this->_cgi_w->set_write(this->_req[KEY_BODY], true))
+		{this->set_del(this->_cgi_w);}
 }
 
 void http_handler::exec_std(const location_conf &lc){
-	this->_res["host"] = this->_req["host"];
+	this->_res["Server"] = this->_req["host"];
 	this->_res["Connection"] = "keep-alive";
 	if (this->_req[KEY_METHOD] == "PUT"){
 		this->_res[KEY_STATUS] = "201 Created";
 		this->_res["Content-Location"] = this->_req[KEY_TARGET];
+		this->_res["Content-Length"] = "0";
 		unlink((lc.root() + this->_req[KEY_TARGET]).c_str());
 		int fd = open((lc.root() + this->_req[KEY_TARGET]).c_str(), O_WRONLY | O_CREAT, S_IREAD | S_IWRITE);
 		if (fd < 0)
@@ -285,7 +299,6 @@ void http_handler::exec_std(const location_conf &lc){
 				std::stringstream ss;
 				ss<<static_cast<long>(sb.st_size);
 				this->_res["Content-Length"] = ss.str();
-Ts(this->_res["Content-Length"].c_str())
 			}
 			if (this->_req[KEY_METHOD] == "GET"){
 				int fd = open((lc.root() + this->_req[KEY_TARGET]).c_str(), O_RDONLY);
@@ -302,11 +315,11 @@ Ts(this->_res["Content-Length"].c_str())
 				}
 				close(fd);
 			}
-Tn(this->_res[KEY_BODY].length())
 		}else
 			{this->Not_Found(); return ;}
 	}else if (this->_req[KEY_METHOD] == "DELETE"){
 		this->_res[KEY_STATUS] = "200 OK";
+		this->_res["Content-Length"] = "0";
 		if((sb.st_mode & S_IFMT) == S_IFDIR || (sb.st_mode & S_IFMT) == S_IFREG){
 			if (unlink((lc.root() + this->_req[KEY_TARGET]).c_str()) < 0)
 				{this->Internal_Server_Error(); return ;}
@@ -331,7 +344,6 @@ Tn(this->_res[KEY_BODY].length())
 
 void http_handler::_to_req(){
 	if (this->_req.find(KEY_BODY) == this->_req.end()){
-T
 		size_t crlf = this->_req_buff.find("\n\n");
 		if (crlf != UINT64_MAX)
 			crlf += 1;
@@ -342,7 +354,6 @@ T
 			else if (this->_req_buff.find("\n") == 0 || this->_req_buff.find("\r\n") == 0)
 				crlf = 0;
 		}
-T
 		if (crlf != UINT64_MAX){
 			this->_req[KEY_BODY] = std::string();
 		}
@@ -433,7 +444,6 @@ T
 		}
 	}
 	if (this->_req.find(KEY_BODY) != this->_req.end()){
-T
 		if (this->_body < 0){
 			if (this->_req.find("transfer-encoding") != this->_req.end()){
 				if(this->_req["transfer-encoding"] != "chunked")
@@ -485,7 +495,7 @@ T
 			}
 		}
 		if (this->_body < 0)
-			{T this->exec();}
+			{this->exec();}
 	}
 	return ;
 }
@@ -529,8 +539,13 @@ void http_handler::Bad_Request(){
 void http_handler::Not_Found(){
 	bool do_it = !this->_res_buff.length();
 	this->_res_buff += STATUS_404;
-	this->_res_buff += "Host: " + this->_res.at("host") + CRLF;
+	{
+		std::map<std::string,std::string>::iterator it= this->_req.find("host");
+		if (it != this->_req.end())
+			this->_res_buff += "Server: " + it->second + CRLF;
+	}
 	this->_res_buff += CONNECTION_KEEP_ALIVE;
+	this->_res_buff += CONTENT_LENGTH_ZERO;
 	this->_res_buff += CRLF;
 	this->_req.clear();
 	this->_res.clear();
@@ -542,8 +557,13 @@ void http_handler::Not_Found(){
 void http_handler::Method_Not_Allowed(){
 	bool do_it = !this->_res_buff.length();
 	this->_res_buff += STATUS_405;
-	this->_res_buff += "Host: " + this->_res.at("host") + CRLF;
+	{
+		std::map<std::string,std::string>::iterator it= this->_req.find("host");
+		if (it != this->_req.end())
+			this->_res_buff += "Server: " + it->second + CRLF;
+	}
 	this->_res_buff += CONNECTION_KEEP_ALIVE;
+	this->_res_buff += CONTENT_LENGTH_ZERO;
 	this->_res_buff += CRLF;
 	this->_req.clear();
 	this->_res.clear();
@@ -555,8 +575,13 @@ void http_handler::Method_Not_Allowed(){
 void http_handler::Not_Acceptable(){
 	bool do_it = !this->_res_buff.length();
 	this->_res_buff += STATUS_406;
-	this->_res_buff += "Host: " + this->_res.at("host") + CRLF;
+	{
+		std::map<std::string,std::string>::iterator it= this->_req.find("host");
+		if (it != this->_req.end())
+			this->_res_buff += "Server: " + it->second + CRLF;
+	}
 	this->_res_buff += CONNECTION_KEEP_ALIVE;
+	this->_res_buff += CONTENT_LENGTH_ZERO;
 	this->_res_buff += CRLF;
 	this->_req.clear();
 	this->_res.clear();
@@ -568,8 +593,13 @@ void http_handler::Not_Acceptable(){
 void http_handler::Length_Required(){
 	bool do_it = !this->_res_buff.length();
 	this->_res_buff += STATUS_411;
-	this->_res_buff += "Host: " + this->_res.at("host") + CRLF;
+	{
+		std::map<std::string,std::string>::iterator it= this->_req.find("host");
+		if (it != this->_req.end())
+			this->_res_buff += "Server: " + it->second + CRLF;
+	}
 	this->_res_buff += CONNECTION_KEEP_ALIVE;
+	this->_res_buff += CONTENT_LENGTH_ZERO;
 	this->_res_buff += CRLF;
 	this->_req.clear();
 	this->_res.clear();
@@ -581,8 +611,9 @@ void http_handler::Length_Required(){
 void http_handler::I_m_a_teapot(){
 	bool do_it = !this->_res_buff.length();
 	this->_res_buff += STATUS_418;
-	this->_res_buff += HOST_TEAPOT;
+	this->_res_buff += SERVER_TEAPOT;
 	this->_res_buff += CONNECTION_KEEP_ALIVE;
+	this->_res_buff += CONTENT_LENGTH_ZERO;
 	this->_res_buff += CRLF;
 	this->_req.clear();
 	this->_res.clear();
@@ -594,8 +625,13 @@ void http_handler::I_m_a_teapot(){
 void http_handler::Internal_Server_Error(){
 	bool do_it = !this->_res_buff.length();
 	this->_res_buff += STATUS_500;
-	this->_res_buff += "Host: " + this->_res.at("host") + CRLF;
+	{
+		std::map<std::string,std::string>::iterator it= this->_req.find("host");
+		if (it != this->_req.end())
+			this->_res_buff += "Server: " + it->second + CRLF;
+	}
 	this->_res_buff += CONNECTION_KEEP_ALIVE;
+	this->_res_buff += CONTENT_LENGTH_ZERO;
 	this->_res_buff += CRLF;
 	this->_req.clear();
 	this->_res.clear();

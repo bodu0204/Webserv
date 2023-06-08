@@ -70,5 +70,6 @@ static const std::map<std::string, std::string>mime;
 
 #define CRLF "\r\n"
 #define F_NAME_ABLE "!#$%&'*+-.^_`|~"
-#define HOST_TEAPOT "Host: teapot\r\n"
+#define SERVER_TEAPOT "Server: teapot\r\n"
+#define CONTENT_LENGTH_ZERO "Content-Length: 0\r\n"
 #define CONNECTION_KEEP_ALIVE "Connection: keep-alive\r\n"
