@@ -22,7 +22,6 @@ void http_handler::_action(short event){
 			this->set_del(this);
 			return ;
 		}
-Ts(buff.c_str())
 		this->_req_buff += buff;
 		if (!this->_cgi_pid){
 			this->_to_req();
@@ -35,7 +34,7 @@ Ts(buff.c_str())
 			this->set_del(this);
 			return ;
 		}
-Ts(this->_res_buff.substr(0,r).c_str())
+Tn(this->_res_buff.substr(0,r).length())
 		this->_res_buff = this->_res_buff.substr(r);
 	}
 	return ;
@@ -110,28 +109,25 @@ void http_handler::callback(std::string str){
 }
 
 void http_handler::exec(){
-	const server_conf &sc = this->_conf.server(this->_req["host"]);
-	if (sc.faile()){
-		if (this->_req["host"] == "teapot" && this->_req[KEY_TARGET] == "/coffee")
-			this->I_m_a_teapot();
-		else
-			this->Bad_Request();
-		return ;
-	}
 	std::string pattern;
+	const server_conf &sc = this->_conf.server(this->_req["host"], pattern);
+	if (this->_req["host"] != "teapot"){
+		if (this->_req["host"] == "teapot" && this->_req[KEY_TARGET] == "/coffee")
+			{this->I_m_a_teapot(); return ;}
+		else
+			this->_req["host"] = pattern;
+	}
 	const location_conf &lc =sc.location(this->_req[KEY_TARGET], pattern);
 	if (lc.faile() || this->_req[KEY_TARGET].find("/..") != UINT64_MAX){
 		this->Not_Found(); return ;
 	}
+	if (!lc.method(this->_req[KEY_METHOD]))
+		{this->Method_Not_Allowed(); return ;}
+	if (lc.redirect().length())
+		{this->Found(lc.redirect()); return ;}
 	if (this->_req[KEY_TARGET] == pattern)
 		this->_req[KEY_TARGET] += lc.index();
-	if (this->_req[KEY_METHOD] != "GET" \
-		&& this->_req[KEY_METHOD] != "POST" \
-		&& this->_req[KEY_METHOD] != "PUT" \
-		&& this->_req[KEY_METHOD] != "DELETE" \
-		&& this->_req[KEY_METHOD] != "HEAD")
-		{this->Method_Not_Allowed(); return ;}
-	if (lc.cgi().length())
+	if (lc.cgi())
 		this->exec_CGI(lc);
 	else
 		this->exec_std(lc);
@@ -212,9 +208,7 @@ void http_handler::exec_CGI(const location_conf &lc){
 	pipe(fds);
 	this->_cgi_pid = fork();
 	if(!this->_cgi_pid){
-		char *args[2];
-		args[0] = strdup(lc.cgi().c_str());
-		args[1] = NULL;
+		char **args = lc.cgi_arg();
 		dup2(fds[STDIN_FILENO], STDIN_FILENO);
 		dup2(fds[STDOUT_FILENO], STDOUT_FILENO);
 		close(fds[STDIN_FILENO]);
@@ -494,8 +488,9 @@ void http_handler::_to_req(){
 				}
 			}
 		}
-		if (this->_body < 0)
-			{this->exec();}
+		if (this->_body < 0){
+			this->exec();
+		}
 	}
 	return ;
 }
@@ -523,11 +518,32 @@ http_handler::~http_handler(){
 		int wstatus;
     	waitpid(this->_cgi_pid, &wstatus, 0);
 	}
+	if (this->_req_buff.length() && !this->_res_buff.length())
+		this->Bad_Request();
+}
+
+void http_handler::Found(std::string url){
+	bool do_it = !this->_res_buff.length();
+	this->_res_buff += STATUS_302;
+	{
+		std::map<std::string,std::string>::iterator it= this->_req.find("host");
+		if (it != this->_req.end())
+			this->_res_buff += "Server: " + it->second + CRLF;
+	}
+	this->_res_buff += "Location: " + url + CRLF;
+	this->_res_buff += CONNECTION_KEEP_ALIVE;
+	this->_res_buff += CRLF;
+	this->_req.clear();
+	this->_res.clear();
+	if (do_it)
+		this->_action(POLL_OUT);
+	return ;
 }
 
 void http_handler::Bad_Request(){
 	bool do_it = !this->_res_buff.length();
 	this->_res_buff += STATUS_400;
+	this->_res_buff += CONTENT_LENGTH_ZERO;
 	this->_req_buff.clear();
 	this->_req.clear();
 	this->_res.clear();
@@ -665,7 +681,7 @@ void http_handler::Internal_Server_Error(){
 	return ;
 }
 
-http_handler::http_handler():handler(NULL, 0, 0), _info(),_conf(port_conf::error),_req_buff(),_body(-1),_req(),_cgi_pid(0),_cgi_w(),_cgi_r(),_res(),_res_buff(){}//not use
-http_handler::http_handler(const http_handler&):handler(NULL, 0, 0), _info(),_conf(port_conf::error),_req_buff(),_body(-1),_req(),_cgi_pid(0),_cgi_w(),_cgi_r(),_res(),_res_buff(){}//not use
+http_handler::http_handler():handler(NULL, 0, 0),_info(),_conf(port_conf::error),_req_buff(),_body(-1),_req(),_cgi_pid(0),_cgi_w(),_cgi_r(),_res(),_res_buff(){}//not use
+http_handler::http_handler(const http_handler&):handler(NULL, 0, 0),_info(),_conf(port_conf::error),_req_buff(),_body(-1),_req(),_cgi_pid(0),_cgi_w(),_cgi_r(),_res(),_res_buff(){}//not use
 const http_handler &http_handler::operator=(const http_handler&){return (*this);}//not use
 

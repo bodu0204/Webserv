@@ -22,7 +22,7 @@ std::map<int, handler *> handlers;
 
 static inline int is_argerror(int argc, char *argv[]);
 static void run();
-static void close_handler();
+static void close_handler(int);
 
 int main(int argc, char *argv[]){
 	if (is_argerror(argc, argv)){
@@ -40,15 +40,16 @@ int main(int argc, char *argv[]){
 		return (1);
 	}
 	const std::vector<port_conf>& ports = conf.port_confs();
+	signal(SIGINT, close_handler);
 	for (std::vector<port_conf>::const_iterator i = ports.begin(); i != ports.end(); i++){
 		int disc = socket(AF_INET, SOCK_STREAM, 0);
 		if (disc < 0){
 			std::cerr << "ERROR can not make socket !" << std::endl;
-			close_handler();
+			close_handler(0);
 			return (1);
 		}
 		{
-			bool optval = true;
+			int optval = true;
 			setsockopt(disc, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
 		}
 		{
@@ -58,14 +59,14 @@ int main(int argc, char *argv[]){
 			addr.sin_addr.s_addr = INADDR_ANY;
 			if (bind(disc, (const struct sockaddr *)&addr, sizeof(addr)) == -1){
 				std::cerr << "ERROR socket can not bind !" << std::endl;
-				close_handler();
+				close_handler(0);
 				close(disc);
 				return (1);
 			}
 		}
 		if (listen(disc, SOMAXCONN) == -1){
 			std::cerr << "ERROR socket can not listen !" << std::endl;
-			close_handler();
+			close_handler(0);
 			close(disc);
 			return (1);
 		}
@@ -181,11 +182,13 @@ static inline int is_argerror(int argc, char *argv[]){
 		|| memcmp(argv[1] + strlen(argv[1]) - strlen(EXTENSION), EXTENSION, sizeof(EXTENSION)));
 }
 
-static void close_handler(){
+static void close_handler(int sig){
 	for (std::map<int ,handler*>::iterator i = handlers.begin(); i != handlers.end(); i++){
 		delete i->second;
 		close(i->first);
 	}
 	handlers.clear();
+	if (sig)
+		exit(0);
 	return ;
 }

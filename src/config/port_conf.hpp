@@ -15,6 +15,7 @@ private:
 	bool is_faile;
 	unsigned short _port;
 	protocol _proto;
+	std::string _default;
 	std::map<std::string, server_conf>_servers;
 	port_conf();
 public:
@@ -24,9 +25,10 @@ public:
 	void marge(const port_conf &);
 	unsigned short port() const;
 	protocol protocol() const;
-	const server_conf &server(std::string) const;
+	const server_conf &server(std::string, std::string& ret_name = port_conf::buff) const;
 	bool faile() const;
 	~port_conf();
 
 	static const port_conf error;
+	static std::string buff;
 };

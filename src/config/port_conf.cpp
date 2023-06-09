@@ -4,9 +4,9 @@
 
 const port_conf port_conf::error;
 
-port_conf::port_conf():is_faile(true),_port(0), _proto(undfind_protocol), _servers(){}
+port_conf::port_conf():is_faile(true),_port(0), _proto(undfind_protocol),_default(""), _servers(){}
 
-port_conf::port_conf(const port_conf &src):is_faile(src.is_faile), _port(src._port), _proto(src._proto), _servers(src._servers){}
+port_conf::port_conf(const port_conf &src):is_faile(src.is_faile), _port(src._port), _proto(src._proto),_default(src._default), _servers(src._servers){}
 
 const port_conf &port_conf::operator=(const port_conf &src){
 	this->is_faile = src.is_faile;
@@ -20,15 +20,17 @@ port_conf::~port_conf(){this->_servers.clear();}
 
 unsigned short port_conf::port() const{return(this->_port);}
 protocol port_conf::protocol() const{return(this->_proto);}
-const server_conf &port_conf::server(std::string name) const{
+const server_conf &port_conf::server(std::string name, std::string& ret_name) const{
+	ret_name = name;
 	if (this->_servers.find(name) != this->_servers.end())
 		return(this->_servers.at(name));
-	return (server_conf::error);
+	ret_name = this->_default;
+	return (this->_servers.at(this->_default));
 }
 
 bool port_conf::faile() const{return(this->is_faile);}
 
-port_conf::port_conf(std::string src):is_faile(false), _port(0), _proto(undfind_protocol), _servers(){
+port_conf::port_conf(std::string src):is_faile(false), _port(0), _proto(undfind_protocol),_default(""), _servers(){
     src = utils::trim_sp(src);
 	if (!src.length()){this->is_faile = true; return;}
 	std::string server_name;
@@ -85,6 +87,7 @@ port_conf::port_conf(std::string src):is_faile(false), _port(0), _proto(undfind_
 	server_conf sc(location);
 	if (sc.faile()){this->is_faile = true; return;}
 	this->_servers.insert(std::pair<std::string, server_conf>(server_name, sc));
+	this->_default = server_name;
     return ;
 }
 

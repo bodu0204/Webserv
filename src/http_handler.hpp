@@ -29,6 +29,9 @@ private:
 	void _to_req();
 	virtual ssize_t _write(const std::string &);
 	virtual ssize_t _read(std::string &);
+
+	inline void Found(std::string);
+
 	inline void Bad_Request();
 	inline void Not_Found();
 	inline void Method_Not_Allowed();
@@ -38,6 +41,7 @@ private:
 
 	inline void Internal_Server_Error();
 	inline void Not_Implemented();//不要？
+
 	http_handler();//not use
 	http_handler(const http_handler&);//not use
 	const http_handler &operator=(const http_handler&);//not use
@@ -46,6 +50,8 @@ public:
 	virtual ~http_handler();
 static const std::map<std::string, std::string>mime;
 };
+
+#define MAX_REQEST_SIZE 65536
 
 #define KEY_BODY ":body"
 #define KEY_METHOD ":method"
@@ -57,6 +63,8 @@ static const std::map<std::string, std::string>mime;
 #define KEY_STATUS ":status"
 
 #define STATUS_200 "HTTP/1.1 200 OK\r\n"
+
+#define STATUS_302 "HTTP/1.1 302 Found\r\n"
 
 #define STATUS_400 "HTTP/1.1 400 Bad Request\r\n"
 #define STATUS_404 "HTTP/1.1 404 Not Found\r\n"
@@ -79,175 +87,175 @@ static const std::map<std::string, std::string>mime;
 #define BODY_404 "<!DOCTYPE html>\
 <html>\
 <head>\
-  <title>404 - Not Found</title>\
-  <style>\
-    body {\
-      background-color: #E0F2F1;\
-      font-family: Arial, sans-serif;\
-      text-align: center;\
-      padding-top: 100px;\
-    }\
+	<title>404 - Not Found</title>\
+	<style>\
+		body {\
+			background-color: #E0F2F1;\
+			font-family: Arial, sans-serif;\
+			text-align: center;\
+			padding-top: 100px;\
+		}\
 \
-    h1 {\
-      color: #00B0FF;\
-      font-size: 48px;\
-    }\
+		h1 {\
+			color: #00B0FF;\
+			font-size: 48px;\
+		}\
 \
-    p {\
-      color: #424242;\
-      font-size: 24px;\
-    }\
+		p {\
+			color: #424242;\
+			font-size: 24px;\
+		}\
 \
-    img {\
-      width: 300px;\
-      height: auto;\
-      margin-bottom: 30px;\
-    }\
-  </style>\
+		img {\
+			width: 300px;\
+			height: auto;\
+			margin-bottom: 30px;\
+		}\
+	</style>\
 </head>\
 <body>\
-  <h1>Oops!</h1>\
-  <p>404 - Page Not Found</p>\
+	<h1>Oops!</h1>\
+	<p>404 - Page Not Found</p>\
 </body>\
 </html>"
 
 #define BODY_405 "<!DOCTYPE html>\
 <html>\
 <head>\
-  <title>404 - Not Found</title>\
-  <style>\
-    body {\
-      background-color: #E0F2F1;\
-      font-family: Arial, sans-serif;\
-      text-align: center;\
-      padding-top: 100px;\
-    }\
+	<title>404 - Not Found</title>\
+	<style>\
+		body {\
+			background-color: #E0F2F1;\
+			font-family: Arial, sans-serif;\
+			text-align: center;\
+			padding-top: 100px;\
+		}\
 \
-    h1 {\
-      color: #00B0FF;\
-      font-size: 48px;\
-    }\
+		h1 {\
+			color: #00B0FF;\
+			font-size: 48px;\
+		}\
 \
-    p {\
-      color: #424242;\
-      font-size: 24px;\
-    }\
+		p {\
+			color: #424242;\
+			font-size: 24px;\
+		}\
 \
-    img {\
-      width: 300px;\
-      height: auto;\
-      margin-bottom: 30px;\
-    }\
-  </style>\
+		img {\
+			width: 300px;\
+			height: auto;\
+			margin-bottom: 30px;\
+		}\
+	</style>\
 </head>\
 <body>\
-  <h1>Oops!</h1>\
-  <p>405 - Method Not Allowed</p>\
+	<h1>Oops!</h1>\
+	<p>405 - Method Not Allowed</p>\
 </body>\
 </html>"
 
 #define BODY_406 "<!DOCTYPE html>\
 <html>\
 <head>\
-  <title>404 - Not Found</title>\
-  <style>\
-    body {\
-      background-color: #E0F2F1;\
-      font-family: Arial, sans-serif;\
-      text-align: center;\
-      padding-top: 100px;\
-    }\
+	<title>404 - Not Found</title>\
+	<style>\
+		body {\
+			background-color: #E0F2F1;\
+			font-family: Arial, sans-serif;\
+			text-align: center;\
+			padding-top: 100px;\
+		}\
 \
-    h1 {\
-      color: #00B0FF;\
-      font-size: 48px;\
-    }\
+		h1 {\
+			color: #00B0FF;\
+			font-size: 48px;\
+		}\
 \
-    p {\
-      color: #424242;\
-      font-size: 24px;\
-    }\
+		p {\
+			color: #424242;\
+			font-size: 24px;\
+		}\
 \
-    img {\
-      width: 300px;\
-      height: auto;\
-      margin-bottom: 30px;\
-    }\
-  </style>\
+		img {\
+			width: 300px;\
+			height: auto;\
+			margin-bottom: 30px;\
+		}\
+	</style>\
 </head>\
 <body>\
-  <h1>Oops!</h1>\
-  <p>406 - Not Acceptable</p>\
+	<h1>Oops!</h1>\
+	<p>406 - Not Acceptable</p>\
 </body>\
 </html>"
 
 #define BODY_411 "<!DOCTYPE html>\
 <html>\
 <head>\
-  <title>404 - Not Found</title>\
-  <style>\
-    body {\
-      background-color: #E0F2F1;\
-      font-family: Arial, sans-serif;\
-      text-align: center;\
-      padding-top: 100px;\
-    }\
+	<title>404 - Not Found</title>\
+	<style>\
+		body {\
+			background-color: #E0F2F1;\
+			font-family: Arial, sans-serif;\
+			text-align: center;\
+			padding-top: 100px;\
+		}\
 \
-    h1 {\
-      color: #00B0FF;\
-      font-size: 48px;\
-    }\
+		h1 {\
+			color: #00B0FF;\
+			font-size: 48px;\
+		}\
 \
-    p {\
-      color: #424242;\
-      font-size: 24px;\
-    }\
+		p {\
+			color: #424242;\
+			font-size: 24px;\
+		}\
 \
-    img {\
-      width: 300px;\
-      height: auto;\
-      margin-bottom: 30px;\
-    }\
-  </style>\
+		img {\
+			width: 300px;\
+			height: auto;\
+			margin-bottom: 30px;\
+		}\
+	</style>\
 </head>\
 <body>\
-  <h1>Oops!</h1>\
-  <p>411 - Length Required</p>\
+	<h1>Oops!</h1>\
+	<p>411 - Length Required</p>\
 </body>\
 </html>"
 
 #define BODY_418 "<!DOCTYPE html>\
 <html>\
 <head>\
-  <title>404 - Not Found</title>\
-  <style>\
-    body {\
-      background-color: #E0F2F1;\
-      font-family: Arial, sans-serif;\
-      text-align: center;\
-      padding-top: 100px;\
-    }\
+	<title>404 - Not Found</title>\
+	<style>\
+		body {\
+			background-color: #E0F2F1;\
+			font-family: Arial, sans-serif;\
+			text-align: center;\
+			padding-top: 100px;\
+		}\
 \
-    h1 {\
-      color: #00B0FF;\
-      font-size: 48px;\
-    }\
+		h1 {\
+			color: #00B0FF;\
+			font-size: 48px;\
+		}\
 \
-    p {\
-      color: #424242;\
-      font-size: 24px;\
-    }\
+		p {\
+			color: #424242;\
+			font-size: 24px;\
+		}\
 \
-    img {\
-      width: 300px;\
-      height: auto;\
-      margin-bottom: 30px;\
-    }\
-  </style>\
+		img {\
+			width: 300px;\
+			height: auto;\
+			margin-bottom: 30px;\
+		}\
+	</style>\
 </head>\
 <body>\
-  <h1>Oops!</h1>\
-  <p>418 - I'm a teapot</p>\
+	<h1>Oops!</h1>\
+	<p>418 - I'm a teapot</p>\
 </body>\
 </html>"
 
