@@ -6,8 +6,6 @@
 #include "echo_handler.hpp"
 #include "http_handler.hpp"
 
-#include "debug.h"
-
 #include <unistd.h>
 
 accept_handler::accept_handler(int descriptor, const port_conf &conf):\

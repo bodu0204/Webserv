@@ -2,6 +2,7 @@
 #include "utils/utils.hpp"
 #include <vector>
 #include <sstream>
+#include <iostream>
 #include <poll.h>
 #include <signal.h>
 #include <sys/wait.h>
@@ -34,7 +35,6 @@ void http_handler::_action(short event){
 			this->set_del(this);
 			return ;
 		}
-Tn(this->_res_buff.substr(0,r).length())
 		this->_res_buff = this->_res_buff.substr(r);
 	}
 	return ;
@@ -109,6 +109,12 @@ void http_handler::callback(std::string str){
 }
 
 void http_handler::exec(){
+	{
+		unsigned addr = ntohl(this->_info.sin_addr.s_addr);
+		std::cout << "IP: " << ((addr & 0xff000000) >> 24) << "." << ((addr & 0xff0000) >> 16) << "." << ((addr & 0xff00) >> 8) << "." << (addr & 0xff) \
+		<< ", HOST: " << this->_req["host"] << ", METHOD: " << this->_req[KEY_METHOD] \
+		<< ", TARGET: " << this->_req[KEY_TARGET] << std::endl;
+	}
 	std::string pattern;
 	const server_conf &sc = this->_conf.server(this->_req["host"], pattern);
 	if (this->_req["host"] != "teapot"){
@@ -119,7 +125,7 @@ void http_handler::exec(){
 	}
 	const location_conf &lc =sc.location(this->_req[KEY_TARGET], pattern);
 	if (lc.faile() || this->_req[KEY_TARGET].find("/..") != UINT64_MAX){
-		this->Not_Found(); return ;
+		this->Not_Found(lc.error_page()); return ;
 	}
 	if (!lc.method(this->_req[KEY_METHOD]))
 		{this->Method_Not_Allowed(); return ;}
@@ -127,6 +133,10 @@ void http_handler::exec(){
 		{this->Found(lc.redirect()); return ;}
 	if (this->_req[KEY_TARGET] == pattern)
 		this->_req[KEY_TARGET] += lc.index();
+	if(lc.alias().length())
+		this->_req[KEY_TARGET_PATH] = lc.alias() + this->_req[KEY_TARGET].substr(pattern.length());
+	else
+		this->_req[KEY_TARGET_PATH] = lc.root() + this->_req[KEY_TARGET];
 	if (lc.cgi())
 		this->exec_CGI(lc);
 	else
@@ -161,15 +171,15 @@ void http_handler::exec_CGI(const location_conf &lc){
 	this->_req.erase("content-type");
 	env.push_back(strdup("GATEWAY_INTERFACE=CGI/1.1"));
 	{
-		std::string buff = this->_req[KEY_TARGET];
+		std::string buff = this->_req[KEY_TARGET_PATH];
 		size_t l = buff.find("?");
 		if (l != UINT64_MAX){
 			env.push_back(strdup(("QUERY_STRING=" + buff.substr(l + 1)).c_str()));
 			buff = buff.substr(0, l);
 		}
-		env.push_back(strdup(("PATH_INFO=" + lc.root() + buff).c_str()));
-		env.push_back(strdup(("PATH_TRANSLATED=" + lc.root() + buff).c_str()));
-		env.push_back(strdup(("SCRIPT_NAME=" + lc.root() + buff).c_str()));
+		env.push_back(strdup(("PATH_INFO=" + this->_req[KEY_TARGET]).c_str()));
+		env.push_back(strdup(("PATH_TRANSLATED=" + buff).c_str()));
+		env.push_back(strdup("SCRIPT_NAME="));
 	}
 	{
 		unsigned addr = ntohl(this->_info.sin_addr.s_addr);
@@ -204,15 +214,23 @@ void http_handler::exec_CGI(const location_conf &lc){
 	}
 	env.push_back(strdup("REDIRECT_STATUS="));
 	env.push_back(NULL);
-	int fds[2];
-	pipe(fds);
+	int pc[2];
+	int cp[2];
+	pipe(pc);
+	pipe(cp);
 	this->_cgi_pid = fork();
 	if(!this->_cgi_pid){
+//for (size_t i = 0; env.data()[i]; i++)
+//{
+//printf("%s\n", env.data()[i]);
+//}
 		char **args = lc.cgi_arg();
-		dup2(fds[STDIN_FILENO], STDIN_FILENO);
-		dup2(fds[STDOUT_FILENO], STDOUT_FILENO);
-		close(fds[STDIN_FILENO]);
-		close(fds[STDOUT_FILENO]);
+		dup2(pc[STDIN_FILENO], STDIN_FILENO);
+		dup2(cp[STDOUT_FILENO], STDOUT_FILENO);
+		close(pc[0]);
+		close(pc[1]);
+		close(cp[0]);
+		close(cp[1]);
 		execve(args[0], args, env.data());
 		exit(42);
 	}
@@ -220,13 +238,18 @@ void http_handler::exec_CGI(const location_conf &lc){
 		free(*i);
 	}
 	if (this->_cgi_pid < 0){
-		close(fds[0]);
-		close(fds[1]);
+		close(pc[0]);
+		close(pc[1]);
+		close(cp[0]);
+		close(cp[1]);
 		this->_cgi_pid = 0;
+		this->Internal_Server_Error();
 		return ;
 	}
-	this->_cgi_r = new cgir_handler(this, fds[0]);
-	this->_cgi_w = new cgiw_handler(this, fds[1]);
+	this->_cgi_r = new cgir_handler(this, cp[0]);
+	this->_cgi_w = new cgiw_handler(this, pc[1]);
+	close(pc[0]);
+	close(cp[1]);
 	this->set_add(this->_cgi_r);
 	this->set_add(this->_cgi_w);
 	if (!this->_cgi_w->set_write(this->_req[KEY_BODY], true))
@@ -240,16 +263,16 @@ void http_handler::exec_std(const location_conf &lc){
 		this->_res[KEY_STATUS] = "201 Created";
 		this->_res["Content-Location"] = this->_req[KEY_TARGET];
 		this->_res["Content-Length"] = "0";
-		unlink((lc.root() + this->_req[KEY_TARGET]).c_str());
-		int fd = open((lc.root() + this->_req[KEY_TARGET]).c_str(), O_WRONLY | O_CREAT, S_IREAD | S_IWRITE);
+		unlink(this->_req[KEY_TARGET_PATH].c_str());
+		int fd = open(this->_req[KEY_TARGET_PATH].c_str(), O_WRONLY | O_CREAT, S_IREAD | S_IWRITE);
 		if (fd < 0)
-			{this->Not_Found(); return ;}
+			{this->Not_Found(lc.error_page()); return ;}
 		if(write(fd, this->_req[KEY_BODY].c_str(),this->_req[KEY_BODY].length()) < static_cast<ssize_t>(this->_req[KEY_BODY].length()))
-			{unlink((lc.root() + this->_req[KEY_TARGET]).c_str()); this->Internal_Server_Error(); return ;}
+			{unlink(this->_req[KEY_TARGET_PATH].c_str()); this->Internal_Server_Error(); return ;}
 	}else{
 	struct stat sb;
-	if (stat((lc.root() + this->_req[KEY_TARGET]).c_str(), &sb) < 0)
-		{this->Not_Found(); return ;}
+	if (stat(this->_req[KEY_TARGET_PATH].c_str(), &sb) < 0)
+		{this->Not_Found(lc.error_page()); return ;}
 	if (this->_req[KEY_METHOD] == "GET" || this->_req[KEY_METHOD] == "HEAD"){
 		this->_res[KEY_STATUS] = "200 OK";
 		if ((sb.st_mode & S_IFMT) == S_IFDIR && lc.autoindex()){
@@ -257,7 +280,7 @@ void http_handler::exec_std(const location_conf &lc){
 			if (this->_req[KEY_METHOD] == "GET"){
 				DIR *dir;
 				struct dirent *dent;
-				dir = opendir((lc.root() + this->_req[KEY_TARGET]).c_str());
+				dir = opendir(this->_req[KEY_TARGET_PATH].c_str());
 				if (dir == NULL)
 					{this->Internal_Server_Error(); return ;}
 				this->_res[KEY_BODY] = AUTO_INDEX_FMT_0 + this->_req[KEY_TARGET] + AUTO_INDEX_FMT_1 \
@@ -268,7 +291,9 @@ void http_handler::exec_std(const location_conf &lc){
 						continue;
 					if (dent->d_type == DT_DIR)
 						name += "/";
-					this->_res[KEY_BODY] += AUTO_INDEX_FMT_3 + name + AUTO_INDEX_FMT_4 + name + AUTO_INDEX_FMT_5;
+					this->_res[KEY_BODY] += AUTO_INDEX_FMT_3 \
+					+ ((this->_req[KEY_TARGET].rfind('/') == this->_req[KEY_TARGET].length() - 1)?(this->_req[KEY_TARGET]):(this->_req[KEY_TARGET] + "/"))\
+					+ name + AUTO_INDEX_FMT_4 + name + AUTO_INDEX_FMT_5;
 				}
 				this->_res[KEY_BODY] += AUTO_INDEX_FMT_6;
 				closedir(dir);
@@ -295,7 +320,7 @@ void http_handler::exec_std(const location_conf &lc){
 				this->_res["Content-Length"] = ss.str();
 			}
 			if (this->_req[KEY_METHOD] == "GET"){
-				int fd = open((lc.root() + this->_req[KEY_TARGET]).c_str(), O_RDONLY);
+				int fd = open(this->_req[KEY_TARGET_PATH].c_str(), O_RDONLY);
 				if (fd < 0)
 					{this->Internal_Server_Error(); return ;}
 				char buff[BUFFERSIZE + 1];
@@ -310,15 +335,15 @@ void http_handler::exec_std(const location_conf &lc){
 				close(fd);
 			}
 		}else
-			{this->Not_Found(); return ;}
+			{this->Not_Found(lc.error_page()); return ;}
 	}else if (this->_req[KEY_METHOD] == "DELETE"){
 		this->_res[KEY_STATUS] = "200 OK";
 		this->_res["Content-Length"] = "0";
 		if((sb.st_mode & S_IFMT) == S_IFDIR || (sb.st_mode & S_IFMT) == S_IFREG){
-			if (unlink((lc.root() + this->_req[KEY_TARGET]).c_str()) < 0)
+			if (unlink(this->_req[KEY_TARGET_PATH].c_str()) < 0)
 				{this->Internal_Server_Error(); return ;}
 		}else
-			{this->Not_Found(); return ;}
+			{this->Not_Found(lc.error_page()); return ;}
 	}else
 		{this->Method_Not_Allowed(); return ;}}
 	bool doit = !this->_res_buff.length();
@@ -461,10 +486,17 @@ void http_handler::_to_req(){
 				while (this->_body >= 0){
 					size_t l = this->_body < static_cast<ssize_t>(this->_req_buff.length()) ? static_cast<size_t>(this->_body) : this->_req_buff.length();
 					this->_req[KEY_BODY] += this->_req_buff.substr(0, l);
+					if (this->_req[KEY_BODY].length() > this->_conf.body_length()) {this->Bad_Request(); return ;}
 					this->_req_buff = this->_req_buff.substr(l);
 					this->_body -= l;
 					if (!this->_req_buff.length())
 						return;
+					if (this->_req_buff.substr(0,1) == "\n")
+						this->_req_buff = this->_req_buff.substr(1);
+					else if(this->_req_buff.substr(0,2) == CRLF)
+						this->_req_buff = this->_req_buff.substr(2);
+					else
+						{this->Bad_Request(); return ;}
 					l = this->_req_buff.find("\n");
 					if (l == UINT64_MAX)
 						return;
@@ -481,6 +513,7 @@ void http_handler::_to_req(){
 			else if (this->_req.find("content-length") != this->_req.end()){
 				size_t l = this->_body < static_cast<ssize_t>(this->_req_buff.length()) ? static_cast<size_t>(this->_body) : this->_req_buff.length();
 				this->_req[KEY_BODY] += this->_req_buff.substr(0, l);
+				if (this->_req[KEY_BODY].length() > this->_conf.body_length()) {this->Bad_Request(); return ;}
 				this->_req_buff = this->_req_buff.substr(l);
 				this->_body -= l;
 				if (this->_body == 0){
@@ -547,13 +580,16 @@ void http_handler::Bad_Request(){
 	this->_req_buff.clear();
 	this->_req.clear();
 	this->_res.clear();
+	this->set_del(this);
+	this->set_del(this->all_child());
 	if (do_it)
 		this->_action(POLL_OUT);
 	return ;
 }
 
-void http_handler::Not_Found(){
+void http_handler::Not_Found(std::string file_name){
 	bool do_it = !this->_res_buff.length();
+	std::string file = file_name.length() ? utils::read_file(file_name.c_str()) : "";
 	this->_res_buff += STATUS_404;
 	{
 		std::map<std::string,std::string>::iterator it= this->_req.find("host");
@@ -561,13 +597,19 @@ void http_handler::Not_Found(){
 			this->_res_buff += "Server: " + it->second + CRLF;
 	}
 	this->_res_buff += CONNECTION_KEEP_ALIVE;
-	{
+	if (file.length()){
+		std::stringstream ss;
+		ss<<file.length();
+		this->_res_buff += "Content-Length: " + ss.str() + CRLF;
+		this->_res_buff += CRLF;
+		this->_res_buff += file;
+	}else{
 		std::stringstream ss;
 		ss<<strlen(BODY_404);
 		this->_res_buff += "Content-Length: " + ss.str() + CRLF;
+		this->_res_buff += CRLF;
+		this->_res_buff += BODY_404;
 	}
-	this->_res_buff += CRLF;
-	this->_res_buff += BODY_404;
 	this->_req.clear();
 	this->_res.clear();
 	if (do_it)

@@ -33,7 +33,7 @@ private:
 	inline void Found(std::string);
 
 	inline void Bad_Request();
-	inline void Not_Found();
+	inline void Not_Found(std::string);
 	inline void Method_Not_Allowed();
 	inline void Not_Acceptable();
 	inline void Length_Required();
@@ -56,6 +56,7 @@ static const std::map<std::string, std::string>mime;
 #define KEY_BODY ":body"
 #define KEY_METHOD ":method"
 #define KEY_TARGET ":target"
+#define KEY_TARGET_PATH ":target-path"
 #define KEY_VERSION ":version"
 #define KEY_CGIBUFF ":CGIbuff"
 #define KEY_CGIHEAD ":CGIhead"
@@ -122,7 +123,7 @@ static const std::map<std::string, std::string>mime;
 #define BODY_405 "<!DOCTYPE html>\
 <html>\
 <head>\
-	<title>404 - Not Found</title>\
+	<title>405 - Method Not Allowed</title>\
 	<style>\
 		body {\
 			background-color: #E0F2F1;\
@@ -157,7 +158,7 @@ static const std::map<std::string, std::string>mime;
 #define BODY_406 "<!DOCTYPE html>\
 <html>\
 <head>\
-	<title>404 - Not Found</title>\
+	<title>406 - Not Acceptable</title>\
 	<style>\
 		body {\
 			background-color: #E0F2F1;\
@@ -192,7 +193,7 @@ static const std::map<std::string, std::string>mime;
 #define BODY_411 "<!DOCTYPE html>\
 <html>\
 <head>\
-	<title>404 - Not Found</title>\
+	<title>411 - Length Required</title>\
 	<style>\
 		body {\
 			background-color: #E0F2F1;\
@@ -227,7 +228,7 @@ static const std::map<std::string, std::string>mime;
 #define BODY_418 "<!DOCTYPE html>\
 <html>\
 <head>\
-	<title>404 - Not Found</title>\
+	<title>418 - I'm a teapot</title>\
 	<style>\
 		body {\
 			background-color: #E0F2F1;\

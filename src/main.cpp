@@ -14,8 +14,6 @@
 #include "handler.hpp"
 #include "accept_handler.hpp"
 
-#include "debug.h"
-
 #define EXTENSION ".conf"
 
 std::map<int, handler *> handlers;
@@ -82,9 +80,9 @@ static void run(){
 	for (std::map<int, handler *>::iterator i = handlers.begin(); i != handlers.end(); i++){
 		schedule[i->second->limit()].insert(i->first);
 	}
+	std::cout << "==========WEBSERV RUNNING=========="<<std::endl;
 	while (true)
 	{
-//T_
 		size_t polllen = handlers.size();
 		struct pollfd pollfds[polllen];
 		{
@@ -104,17 +102,7 @@ static void run(){
 		else
 			timeout *= 1000;
 
-//for (std::map<time_t, std::set<int> >::iterator i = schedule.begin(); i != schedule.end(); i++)
-//{
-//Tn(i->first)
-//for (std::set<int>::iterator t = i->second.begin(); t != i->second.end(); t++)
-//{
-//Tn(*t)
-//}
-//}
-//Tn(timeout)
 		int ev = poll(pollfds, polllen, timeout);
-//Tn(ev)
 		std::set<handler *> add;
 		std::set<handler *> del;
 		for (size_t i = 0; ev > 0; i++){
@@ -133,7 +121,6 @@ static void run(){
 				ev--;
 			}
 		}
-//T
 		{
 			time_t t = schedule.begin()->first;
 			time_t now = time(NULL);
@@ -151,13 +138,11 @@ static void run(){
 			if (t <= now)
 				schedule.erase(t);
 		}
-//Tn(add.size())
 		for (std::set<handler *>::iterator i = add.begin(); i != add.end(); i++)
 		{
 			schedule[(*i)->limit()].insert((*i)->descriptor);
 			handlers[(*i)->descriptor] = *i;
 		}
-//Tn(del.size())
 		for (std::set<handler *>::iterator i = del.begin(); i != del.end(); i++)
 		{
 			handler *h = *i;
@@ -168,10 +153,8 @@ static void run(){
 					schedule.erase(h->limit());
 			}
 			close(h->descriptor);
-//TESTn("delete", h->descriptor)
 			delete h;
 		}
-//T
 	}
 	return ;
 }

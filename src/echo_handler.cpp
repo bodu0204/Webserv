@@ -5,8 +5,6 @@
 #include <sys/socket.h>
 #define BUFFERSIZE 1024
 
-#include "debug.h"
-
 void echo_handler::_action(short event){
 	if (!this->_cgi_pid){
 		int fds[2];

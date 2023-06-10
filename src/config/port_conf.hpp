@@ -16,6 +16,7 @@ private:
 	unsigned short _port;
 	protocol _proto;
 	std::string _default;
+	size_t _body_len;
 	std::map<std::string, server_conf>_servers;
 	port_conf();
 public:
@@ -25,6 +26,7 @@ public:
 	void marge(const port_conf &);
 	unsigned short port() const;
 	protocol protocol() const;
+	size_t body_length() const;
 	const server_conf &server(std::string, std::string& ret_name = port_conf::buff) const;
 	bool faile() const;
 	~port_conf();

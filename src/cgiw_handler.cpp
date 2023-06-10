@@ -4,8 +4,6 @@
 #include "cgiw_handler.hpp"
 #define BUFFERSIZE 1024
 
-#include "debug.h"
-
 void cgiw_handler::_action(short){
 	if (this->buf.length())
 	{

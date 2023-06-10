@@ -1,9 +1,12 @@
 #include "location_conf.hpp"
 #include "../utils/utils.hpp"
+#include <sstream>
+#include <sys/stat.h>
+
 const location_conf location_conf::error;
 
-location_conf::location_conf():is_faile(true),_redirect(),_root(),_index(),_cgi(),_methods(),_autoindex(true){return ;}
-location_conf::location_conf(const location_conf &src):is_faile(src.is_faile),_redirect(src._redirect),_root(src._root),_index(src._index),_cgi(src._cgi),_methods(src._methods),_autoindex(src._autoindex){return ;}
+location_conf::location_conf():is_faile(true),_redirect(),_root(),_alias(),_index(),_cgi(),_methods(),_autoindex(true),_error(){return ;}
+location_conf::location_conf(const location_conf &src):is_faile(src.is_faile),_redirect(src._redirect),_root(src._root),_alias(src._alias),_index(src._index),_cgi(src._cgi),_methods(src._methods),_autoindex(src._autoindex),_error(src._error){return ;}
 const location_conf &location_conf::operator=(const location_conf &src){
 	this->is_faile = src.is_faile;
 	this->_root = src._root;
@@ -16,6 +19,7 @@ bool location_conf::faile() const{return (this->is_faile);}
 
 std::string location_conf::redirect() const{return (this->_redirect);}
 std::string location_conf::root() const{return (this->_root);}
+std::string location_conf::alias() const{return (this->_alias);}
 std::string location_conf::index() const{return (this->_index);}
 bool location_conf::cgi() const{return (!!this->_cgi.size());}
 char** location_conf::cgi_arg() const{
@@ -34,9 +38,11 @@ bool location_conf::method(const std::string& target) const{
 
 bool location_conf::autoindex() const{return (this->_autoindex);}
 
+std::string location_conf::error_page() const{return (this->_error);}
+
 location_conf::~location_conf(){return ;}
 
-location_conf::location_conf(std::string src):is_faile(false),_redirect(),_root(),_index(),_cgi(),_methods(),_autoindex(true){
+location_conf::location_conf(std::string src):is_faile(false),_redirect(),_root(),_alias(),_index(),_cgi(),_methods(),_autoindex(true),_error(){
 	src = utils::trim_sp(src);
 	if (!src.length()){this->is_faile = true; return;}
 	bool autoi = false;
@@ -48,13 +54,18 @@ location_conf::location_conf(std::string src):is_faile(false),_redirect(),_root(
 		if(buf == "redirect"){
 			std::string value = utils::new_token(src, this->is_faile, false, true);
 			if (this->is_faile) {return ;}
-			if (this->_root.length()) {this->is_faile = true; return;}
+			if (this->_redirect.length()) {this->is_faile = true; return;}
 			this->_redirect = value;
 		}else if(buf == "root"){
 			std::string value = utils::new_token(src, this->is_faile, false, true);
 			if (this->is_faile) {return ;}
 			if (this->_root.length()) {this->is_faile = true; return;}
 			this->_root = value;
+		}else if(buf == "alias"){
+			std::string value = utils::new_token(src, this->is_faile, false, true);
+			if (this->is_faile) {return ;}
+			if (this->_alias.length()) {this->is_faile = true; return;}
+			this->_alias = value;
 		}else if(buf == "index"){
 			std::string value = utils::new_token(src, this->is_faile, false, true);
 			if (this->is_faile) {return ;}
@@ -79,6 +90,21 @@ location_conf::location_conf(std::string src):is_faile(false),_redirect(),_root(
 				}
 			}
 			if (!this->_cgi.size()) {this->is_faile = true; return;}
+			std::stringstream ss;
+			ss<<getenv("PATH");
+			std::string s;
+			while (true){
+				std::getline(ss,s,':');
+				s += "/" + this->_cgi.at(0);
+				struct stat st;
+				if (!stat(s.c_str(), &st) \
+				&& S_ISREG(st.st_mode) \
+				&& (st.st_mode & S_IXOTH) && (st.st_mode & S_IXGRP) && (st.st_mode & S_IXUSR)){
+					this->_cgi.at(0) = s;
+					break;
+				}
+				if (ss.eof() || ss.fail()) {this->is_faile = true; return;}
+			}
 		}else if(buf == "method"){
 			if (meth) {this->is_faile = true; return;}
 			meth = true;
@@ -108,6 +134,11 @@ location_conf::location_conf(std::string src):is_faile(false),_redirect(),_root(
 				this->_autoindex = false;
 			else if (value != "on")
 				{this->is_faile = true; return;}
+		}else if(buf == "error-page"){
+			std::string value = utils::new_token(src, this->is_faile, false, true);
+			if (this->is_faile) {return ;}
+			if (this->_error.length()) {this->is_faile = true; return;}
+			this->_error = value;
 		}else{
 			this->is_faile = true; return ;}
 	}
@@ -130,10 +161,10 @@ location_conf::location_conf(std::string src):is_faile(false),_redirect(),_root(
 		}
 	}
 	if (this->_redirect.length()){
-		if (this->_root.length() || autoi || this->_cgi.size()) {this->is_faile = true; return;}
+		if ((this->_root.length() || this->_alias.length()) || autoi || this->_cgi.size()) {this->is_faile = true; return;}
 		return ;
 	}
-	if (!this->_root.length()) {this->is_faile = true; return;}
+	if (!(!!this->_root.length() ^ !!this->_alias.length())) {this->is_faile = true; return;}
 	return ;
 }
 

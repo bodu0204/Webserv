@@ -1,6 +1,5 @@
 #include "config.hpp"
 #include "../utils/utils.hpp"
-#include "../debug.h"
 
 config::config():is_faile(true),ports(){}
 

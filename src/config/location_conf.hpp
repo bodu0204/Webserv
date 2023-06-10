@@ -2,17 +2,18 @@
 #include <string>
 #include <vector>
 #include <set>
-#include "../debug.h"
 
 class location_conf{
 private:
 	bool is_faile;
 	std::string _redirect;
 	std::string _root;
+	std::string _alias;
 	std::string _index;
     std::vector<std::string> _cgi;
     std::set<std::string>_methods;
 	bool _autoindex;
+	std::string _error;
 	location_conf();
 public:
 	location_conf(std::string);
@@ -21,11 +22,13 @@ public:
 	bool faile() const;
 	std::string redirect() const;
 	std::string root() const;
+	std::string alias() const;
 	std::string index() const;
 	bool cgi() const;
 	char** cgi_arg() const;
 	bool method(const std::string&) const;
 	bool autoindex() const;
+    std::string error_page() const;
 	~location_conf();
 
 	static const location_conf error;

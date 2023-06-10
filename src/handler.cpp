@@ -1,6 +1,5 @@
 #include "handler.hpp"
 
-#include "debug.h"
 
 handler::handler(handler *_parent, int _descriptor, unsigned _events ,long life):\
 _life(life),_limit(life==LONG_MAX ? life : time(NULL) + life),parent(_parent),descriptor(_descriptor),events(_events){
